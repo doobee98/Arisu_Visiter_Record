@@ -1,0 +1,65 @@
+from View.Database.DatabaseTable.DatabaseTableView import *
+from View.Database.DatabaseTitleView import *
+from View.Database.DatabaseFilterView import *
+from View.Database.DatabaseButtonView import *
+from View.Database.FunctionGroupView import *
+from Utility.ClockView import *
+from Utility.TableInterface.View.Search.TableSearchDialog import *
+from Utility.ShortCutManager import *
+from Utility.CommandManager import *
+
+
+class DatabaseMainView(QWidget):
+    def __init__(self, table_model: DatabaseModel):
+        super().__init__()
+
+        self.database_table = DatabaseTableView(table_model)
+        self.title = DatabaseTitleView(table_model.getLocation())
+        self.clock = ClockView()
+        self.filter = DatabaseFilterView()
+        self.button = DatabaseButtonView()
+        self.function_group = FunctionGroupView()
+        self.search_dialog = TableSearchDialog(self.database_table)
+
+        self.function_group.setSearchSlot(self.searchDialogExec)
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_F,
+                                    self.function_group.button(ButtonFactory.ButtonType.Search).click)
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
+        # todo 임시 테스트
+
+        hbox_top = QHBoxLayout()
+        hbox_top.addWidget(self.title, 4)
+        hbox_top.addWidget(self.clock, 1)
+
+        hbox_middle = QHBoxLayout()
+        hbox_middle.addWidget(self.filter)
+        hbox_middle.addWidget(self.function_group)
+
+        vbox = QVBoxLayout()
+        vbox.addLayout(hbox_top)
+        vbox.addStretch(1)
+        vbox.addLayout(hbox_middle)
+        vbox.addStretch(1)
+        vbox.addWidget(self.database_table)
+
+        vbox.setAlignment(Qt.AlignCenter)
+        self.setLayout(vbox)
+
+    def __str__(self):
+        return 'DatabaseMainView'
+
+    @pyqtSlot()
+    def render(self):
+        self.database_table.render()
+
+    def activeView(self) -> Type[QWidget]:
+        if self.search_dialog.isVisible():
+            return self.search_dialog
+        else:
+            return self
+
+    @pyqtSlot()
+    def searchDialogExec(self) -> None:
+        self.search_dialog.exec_()
+
