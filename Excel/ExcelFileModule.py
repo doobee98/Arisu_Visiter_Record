@@ -133,18 +133,18 @@ class ExcelFileModule:
         db_sheet = db_file[ExcelFileNameConfig.getExcelDatabaseSheetName()]  # Sheet1
         info = ExcelDBInfo
         start_row = info.StartRow
-        end_row = None
-        for row_iter, row_cells in enumerate(db_sheet, 1):
-            if row_iter >= start_row:
-                if all(c.value is None for c in row_cells):
-                    end_row = row_iter - 1
-                    break
-
+        end_row = db_sheet.max_row
+        # for row_iter, row_cells in enumerate(db_sheet, 1):
+        #     if row_iter >= start_row:
+        #         if all(c.value is None for c in row_cells):
+        #             end_row = row_iter - 1
+        #             break
+        print('setting')
         db_model = DatabaseModel(location_string, file_decorator='../')
         if db_model.isFileExist():
             return None
-
         db_model.blockSignals(True)
+        print('load start')
         for row_iter in range(start_row, end_row + 1):
             property_dict = {field: '' for field in DatabaseFieldModelConfig.getFieldList()}
             for field_iter, info_iter in info.FieldInfo.items():
@@ -154,9 +154,11 @@ class ExcelFileModule:
                 property = info.excelTextFilter(property)
                 property_dict[field_iter] = property
             db_model.addData(VisitorModel(property_dict))
+            print(row_iter, 'row data added')
         db_model.blockSignals(False)
         db_file.close()
         #return None
+        print('finish')
         db_model.save()
         return db_model
 
