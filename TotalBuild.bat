@@ -3,9 +3,9 @@ rmdir /s /q Excel
 rmdir /s /q ImportExcelDB
 rmdir /s /q ExportExcelRecord
 cd ..
-pyinstaller --noconsole --onefile Arisu.py
+pyinstaller --clean --noconsole --onefile Arisu.py
 pyinstaller ImportExcelDB.py
-pyinstaller --noconsole ExportExcelRecord.py
+pyinstaller ExportExcelRecord.py
 cd dist
 xcopy ExportExcelRecord Excel\ /e /h /k /y
 copy ImportExcelDB\ImportExcelDB.exe Excel\ImportExcelDB.exe

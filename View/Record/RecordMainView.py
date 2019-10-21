@@ -10,7 +10,7 @@ from View.Record.FunctionGroupView import *
 from View.Record.RecordTable.RecordTableView import *
 from View.Record.RemainNumberBoxView import *
 
-from Utility.TableInterface.View.Search.TableSearchDialog import *
+from Utility.Abstract.View.Table.Search.TableSearchDialog import *
 from Utility.DeliveryDialog import *
 from Utility.ShortCutManager import *
 
@@ -19,7 +19,7 @@ import subprocess
 
 
 class RecordMainViewSignal(QObject):
-    SearchRecordRequest = pyqtSignal(dict)
+    UpdateDatabaseRequest = pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -28,6 +28,7 @@ class RecordMainView(QWidget):
     def __init__(self, table_model: RecordTableModel):
         super().__init__()
 
+        self.__signal_set = RecordMainViewSignal(self)
         self.__table_model = table_model
         date = table_model.getRecordDate()
         location = table_model.getLocation()
@@ -55,9 +56,12 @@ class RecordMainView(QWidget):
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_A, self.arrive_btn.arriveBtnClicked)
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_D, self.leave.leaveBtnClicked)
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_F, self.searchDialogExec)
-                                    #self.function_group.button(ButtonFactory.ButtonType.Search).click)
+
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_X, lambda: self.record_table.cutSelectedItems())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_C, lambda: self.record_table.copySelectedItems())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_V, lambda: self.record_table.pasteSelectedItems())
         # todo 임시 테스트
 
         hbox_top = QHBoxLayout()
@@ -107,12 +111,15 @@ class RecordMainView(QWidget):
     def __str__(self):
         return 'RecordMainView'
 
+    def getSignalSet(self) -> RecordMainViewSignal:
+        return self.__signal_set
+
     def render(self) -> None:
         self.title.render()
         self.search_table.render()
         self.record_table.render()
 
-    def activeView(self) -> Type[QWidget]:
+    def activeView(self) -> QWidget:
         if self.search_dialog.isVisible():
             return self.search_dialog
         else:
@@ -121,28 +128,30 @@ class RecordMainView(QWidget):
     def __tableModel(self) -> RecordTableModel:
         return self.__table_model
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def searchDialogExec(self) -> None:
         self.search_dialog.exec_()
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def deliveryDialogExec(self) -> None:
         self.delivery_dialog.exec_()
 
-    @pyqtSlot()  # todo 깔끔히 하는법?
+    @MyPyqtSlot()
     def reportExcel(self) -> None:
-        with open('Excel/execute_properties.txt', 'wb') as f:
-            f.write((self.__tableModel().getLocation() + '\n').encode())
-            f.write((self.__tableModel().getRecordDate() + '\n').encode())
+        try:
+            with open('Excel/execute_properties.txt', 'wb') as f:
+                f.write((self.__tableModel().getLocation() + '\n').encode())
+                f.write((self.__tableModel().getRecordDate() + '\n').encode())
 
-        # QMessageBox.information(self, '알림', '연결이 안 되어 있습니다.')
-        StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
-        os.chdir('.\\\\Excel')
-        subprocess.call('.\\\\ExportExcelRecord.exe')
-        os.chdir('..')
-        # todo ******************* exe 실행에서 에러발생함
-        QMessageBox.information(self, '알림', '마감 파일이 생성되었습니다.')
+            StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
+            subprocess.call('.\\\\Excel\\\\ExportExcelRecord.exe')
+            QMessageBox.information(self, '알림', '마감 파일이 생성되었습니다.')
+        except Exception as e:
+            ErrorLogger.reportError('마감 파일 생성중 오류가 발생했습니다.\n'
+                                    'Excel 폴더에 ExportExcelRecord.exe 파일이 존재하는지 확인해 주세요.')
         StatusBarManager.setIdleStatus()
+        if not Config.RecordOption.autoUpdateDB():
+            self.getSignalSet().UpdateDatabaseRequest.emit()
 
 
 

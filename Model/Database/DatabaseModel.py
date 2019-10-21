@@ -1,4 +1,4 @@
-from Utility.TableInterface.Model.MyTableModel import *
+from Utility.Abstract.Model.MyTableModel import *
 from Model.Database.VisitorModel import *
 from Utility.Config.DatabaseFieldModelConfig import *
 from Utility.Clock import *
@@ -21,20 +21,33 @@ class DatabaseModel(MyTableModel):
     DatabaseModel
     __id_initial_alphabet: __generateVisitorId 참조
     __id_number_width: __generateVisitorId 참조
-    """  # todo 임시 - 파일데코레이터
-    def __init__(self, location_string: str, field_list: List[str] = DatabaseFieldModelConfig.getFieldList(), file_decorator: str=''):
+    """
+    def __init__(self, location_string: str, field_list: List[str] = DatabaseFieldModelConfig.getFieldList(), load: bool= True):
         super().__init__(field_list)
 
         self.__location = location_string
-        self._setFileName(file_decorator + FileNameConfig.getDatabaseName(location_string))
         self._setSignalSet(DatabaseModelSignal(self))
+        directory, file_name = FilePathConfig.getDatabasePath(location_string)
+        self.setDirectory(directory)
+        self.setFileName(file_name)
         self._setDataType(VisitorModel)
         self.__id_initial_alphabet = 'A'
         self.__id_number_width = 8
-        self._load()
+        self.__auto_save = True
+        if load:
+            self.load()
+            self.setDirectory(directory)
+            self.setFileName(file_name)
+
+    @classmethod
+    def initNull(cls) -> 'DatabaseModel':
+        return DatabaseModel('')
 
     def getLocation(self) -> str:
         return self.__location
+
+    def setAutoSave(self, enable: bool) -> None:
+        self.__auto_save = enable
 
     def addData(self, data: VisitorModel):
         """
@@ -72,12 +85,16 @@ class DatabaseModel(MyTableModel):
             else:
                 target_num += 1
 
-    def _load(self):
+    def save(self) -> None:
+        if self.__auto_save:
+            super().save()
+
+    def load(self):
         """
         load시 save_deadline을 지난 데이터는 삭제한다
         """
-        super()._load()
-        if self.isFileExist():
+        super().load()
+        if self.hasFile():
             self.__deleteOldData()
 
     def __deleteOldData(self) -> None:
@@ -89,7 +106,15 @@ class DatabaseModel(MyTableModel):
             diff_days = (today - recent_date).days
             if diff_days > save_deadline:
                 delete_idx_list.append(idx)
-        delete_idx_list.reverse()  # 뒤에부터 지워야 idx가 그대로 유효함(앞에서부터 지우면 한칸씩 땡겨짐)
-        for idx in delete_idx_list:
-            self.deleteData(idx)
+        if delete_idx_list:
+            question_string = f'출입한 지 {save_deadline}일이 지난 데이터 {len(delete_idx_list)} 건이 검색되었습니다.\n'
+            question_string += '삭제하시겠습니까?'
+            reply = QMessageBox.question(QApplication.activeWindow(), '삭제', question_string,
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.No:
+                return
+            else:
+                delete_idx_list.reverse()  # 뒤에부터 지워야 idx가 그대로 유효함(앞에서부터 지우면 한칸씩 땡겨짐)
+                for idx in delete_idx_list:
+                    self.deleteData(idx)
 

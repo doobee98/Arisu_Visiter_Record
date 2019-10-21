@@ -1,4 +1,4 @@
-from Utility.TableInterface.View.MyItemViewFactory import *
+from Utility.Abstract.View.Table.MyItemViewFactory import *
 
 
 class RecordItemViewFactory(MyItemViewFactory):
@@ -6,7 +6,7 @@ class RecordItemViewFactory(MyItemViewFactory):
         Inserted = MyItemViewFactory.ItemType.ReadOnly
         Finished = Inserted | MyItemView.Option.DarkGray
 
-    def __init__(self, parent: Type['MyTableView']):
+    def __init__(self, parent: 'MyTableView'):
         super().__init__(parent)
 
 

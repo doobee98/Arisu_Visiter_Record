@@ -17,7 +17,7 @@ class ScrollButtonView(QWidget):
 
 
         # 스크롤 라벨 생성
-        self.scroll_lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True), text='스크롤\n(Ctrl + Q)')
+        self.scroll_lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True), text='이어 쓰기\n(Ctrl + Q)')
 
         #   스크롤 버튼 생성 및 스타일링
         #self.scroll_short_cut_text = 'Ctrl + Q'
@@ -41,7 +41,7 @@ class ScrollButtonView(QWidget):
     def getSignalSet(self) -> ScrollButtonViewSignal:
         return self.__signal_set
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def scrollBtnClicked(self):
         self.getSignalSet().ScrollBtnClicked.emit()
 

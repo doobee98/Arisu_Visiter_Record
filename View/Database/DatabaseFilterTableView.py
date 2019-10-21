@@ -1,4 +1,4 @@
-from Utility.TableInterface.View.MyTableWidget import *
+from Utility.Abstract.View.Table.MyTableWidget import *
 from Utility.Config.DatabaseFieldViewConfig import *
 
 
@@ -13,7 +13,7 @@ class DatabaseFilterTableView(MyTableWidget):
         self.setHorizontalHeaderLabels([DatabaseFieldViewConfig.getOption(field_name, 'lined_name')
                                           for field_name in self.__field_list])
         self.renderHeader()
-
+        self.setFont(BaseUI.basicQFont())
         self.__initializeItems()
 
     def getRowData(self) -> Dict[str, str]:
@@ -35,6 +35,9 @@ class DatabaseFilterTableView(MyTableWidget):
             # 헤더 너비 설정
             if DatabaseFieldViewConfig.getOption(field_name, 'fit_type') == DatabaseFieldViewConfig.Option.FitToContent:
                 self.resizeColumnToContents(col)
+            elif DatabaseFieldViewConfig.getOption(field_name, 'fit_type') == DatabaseFieldViewConfig.Option.FitTwice:
+                default_width = self.horizontalHeader().defaultSectionSize()
+                self.setColumnWidth(col, default_width * 2)
         self.fixTableWidgetSize()
 
     def __initializeItems(self):

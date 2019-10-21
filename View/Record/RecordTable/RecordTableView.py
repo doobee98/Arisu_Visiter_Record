@@ -1,10 +1,12 @@
-from Utility.TableInterface.View.MyTableView import *
+from Utility.Abstract.View.Table.MyTableView import *
 from Utility.Config.RecordFieldViewConfig import *
 from Model.Record.RecordTableModel import *
+from Utility.CompleterListModule import *
 
 
 class RecordTableViewSignal(MyTableViewSignal):
     FindDatabaseRequest = pyqtSignal(dict)
+    ChangeDataGroupRequest = pyqtSignal(dict)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -37,7 +39,7 @@ class RecordTableView(MyTableView):
         for idx_iter, model_field_iter in enumerate(model_field_list):
             self.setModelField(idx_iter + 1, model_field_iter)
 
-        Config.RecordOption.getSignalSet().OptionChanged.connect(self.render)
+        Config.RecordOption.getSignalSet().OptionChanged.connect(self.optionChanged)
 
         self.__initItemOptions()
         self.fixTableWidgetSize()
@@ -79,21 +81,16 @@ class RecordTableView(MyTableView):
         self.setRowOptionSpan(Option.Row.Takeover, 1, 15)
 
     # override
-    def setModel(self, model: Type[MyTableModel]) -> None:
+    def setModel(self, model: MyTableModel) -> None:
         super().setModel(model)
         if model:
             self.setRowCount(model.getDataCount() + 10)
-            self.initializeItems()
 
     def setModelField(self, column: int, model_field: str) -> None:
         super().setModelField(column, model_field)
         header_item = QTableWidgetItem()
-        header_item.setText(RecordFieldViewConfig.getOption(model_field, 'lined_name'))
+        header_item.setText(str(RecordFieldViewConfig.getOption(model_field, 'lined_name')))
         self.setHorizontalHeaderItem(column, header_item)
-
-    def render(self) -> None:
-        self.__initItemOptions()
-        super().render()
 
     def renderHeader(self) -> None:
         super().renderHeader()
@@ -196,16 +193,17 @@ class RecordTableView(MyTableView):
 
     def myItemFocusChanged(self, current: QTableWidgetItem, previous: QTableWidgetItem) -> None:
         if current:
-            current_row = current.row()
-            search_property_dict = {}
-            for field_name_iter in self.modelFieldList():
-                field_column_iter = self.fieldColumn(field_name_iter)
-                if RecordFieldViewConfig.getOption(field_name_iter, 'search_field'):
-                    if self.item(current_row, field_column_iter).text():  # 빈 텍스트가 아니라면
-                        search_property_dict[field_name_iter] = self.item(current_row, field_column_iter).text()
-            self.getSignalSet().FindDatabaseRequest.emit(search_property_dict)
-
+            self.findRowDatabase(self.currentRow())
         super().myItemFocusChanged(current, previous)
+
+    def findRowDatabase(self, row: int) -> None:
+        search_property_dict = {}
+        for field_name_iter in self.modelFieldList():
+            field_column_iter = self.fieldColumn(field_name_iter)
+            if RecordFieldViewConfig.getOption(field_name_iter, 'search_field'):
+                if self.item(row, field_column_iter).text():  # 빈 텍스트가 아니라면
+                    search_property_dict[field_name_iter] = self.item(row, field_column_iter).text()
+        self.getSignalSet().FindDatabaseRequest.emit(search_property_dict)
 
     def isRowAnyTexts(self, row: int) -> bool:
         if self.item(row, self.fieldColumn('고유번호')).text() == RecordModel.IdDefaultString:
@@ -239,3 +237,40 @@ class RecordTableView(MyTableView):
     def setFocusNextRow(self):
         if self._model():
             self.setFocusCell(self._model().getDataCount(), 1)
+    
+    @MyPyqtSlot()
+    def optionChanged(self) -> None:
+        Option = RecordTableView.Option
+        if not Config.RecordOption.enableFixId():
+            id_column = self.fieldColumn('고유번호')
+            for row_type_iter in Option.Row:
+                current_option = self.rowOption(row_type_iter, id_column)
+                self.setRowOption(row_type_iter, id_column, current_option | MyItemView.Option.Unable)
+        else:
+            id_column = self.fieldColumn('고유번호')
+            self.setRowOption(Option.Row.Basic, id_column, Option.Item.Basic)
+            self.setRowOption(Option.Row.NotInserted, id_column, Option.Item.Basic)
+            self.setRowOption(Option.Row.Inserted, id_column, Option.Item.Inserted)
+            self.setRowOption(Option.Row.Finished, id_column, Option.Item.Finished)
+            self.setRowOption(Option.Row.Takeover, id_column, Option.Item.Finished | MyItemView.Option.Spanned)
+            # todo: 임시로 spanned 넣음. 초기화하는 메소드를 추가할 것
+        self.render()
+
+    def editItem(self, item: QTableWidgetItem) -> None:
+        super().editItem(item)
+        line_edit: ItemLineEdit = self.cellWidget(item.row(), item.column())
+        completer_list = CompleterListModule.getCompleterList(item.row(), item.column())
+        if completer_list:
+            line_edit.setCompleterList(completer_list)
+
+    def openPersistentEditor(self, item: QTableWidgetItem) -> None:
+        # todo 버그때문에 잠금
+        super().openPersistentEditor(item)
+        le: ItemLineEdit = self.cellWidget(item.row(), item.column())
+        le.setCompleterList([])
+
+    """
+    자동완성 기능: completer list를 만들어내서 자동완성함
+    현재 문제점: consistent line edit로 편집할 때는 lineedit를 딱 한번만 만들고 계속 켜두기 때문에,
+    만들 당시에 있던 정보만 활용가능함. 이 문제점을 해결하려면 _getCompleterList를 lineedit에 focus 될때마다 호출해야함.
+    """

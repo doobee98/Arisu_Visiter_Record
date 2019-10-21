@@ -89,7 +89,7 @@ class LeaveView(QWidget):
         self.idnum_line.setText(LeaveView.DefaultIDNumBlank)
         self.name_line.setText(LeaveView.DefaultNameAll)
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def leaveBtnClicked(self):
         visitor_num = self.idnum_line.text()
         visitor_name = self.name_line.text()

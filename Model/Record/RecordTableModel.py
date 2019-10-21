@@ -1,7 +1,7 @@
 from Model.Record.RecordModel import *
-from Utility.TableInterface.Model.MyTableModel import *
+from Utility.Abstract.Model.MyTableModel import *
 from Utility.Clock import *
-from Utility.File.FileNameConfig import *
+from Utility.File.FilePathConfig import *
 
 
 class RecordTableModelSignal(MyTableModelSignal):
@@ -22,14 +22,23 @@ class RecordTableModel(MyTableModel):
     RecordTableModel
     __record_date: 기록부의 날짜
     """
-    def __init__(self, location_string: str, record_date_string: str, field_list: List[str] = RecordFieldModelConfig.getFieldList(), file_decorator: str=''):
+    def __init__(self, location_string: str, record_date_string: str, field_list: List[str] = RecordFieldModelConfig.getFieldList(), load: bool = True):
         super().__init__(field_list)
         self.__record_date = record_date_string
         self.__location = location_string
-        self._setFileName(file_decorator + FileNameConfig.getRecordTableName(location_string, record_date_string))
+        directory, file_name = FilePathConfig.getRecordTablePath(location_string, record_date_string)
+        self.setDirectory(directory)
+        self.setFileName(file_name)
         self._setSignalSet(RecordTableModelSignal(self))
         self._setDataType(RecordModel)
-        self._load()
+        if load:
+            self.load()
+            self.setDirectory(directory)
+            self.setFileName(file_name)
+
+    @classmethod
+    def initNull(cls) -> 'RecordTableModel':
+        return RecordTableModel('', '')
 
     def getRecordDate(self) -> str:
         return self.__record_date
@@ -100,12 +109,12 @@ class RecordTableModel(MyTableModel):
                 remain_list.append((idx_iter, data_iter.getProperty('성명')))
         return remain_list
 
-    def _load(self):
+    def load(self):
         """
         load시 generated 상태의 record model은 삭제한다.
         """
-        super()._load()
-        if self.isFileExist():
+        super().load()
+        if self.hasFile():
             self.__deleteBasicRecords()
 
     def __deleteBasicRecords(self) -> None:

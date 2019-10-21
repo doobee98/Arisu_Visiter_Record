@@ -1,75 +1,84 @@
 from View.Database.DatabaseTable.DatabaseTableView import *
 
-from Utility.CommandManager import *
-from Model.Command.ConcreteCommand.Model import Model
-from Model.Command.ConcreteCommand.View import View
+from Controller.AbstractController import *
 
 
-class DatabaseTableController(QObject):
+class DatabaseTableController(AbstractController):
     def __init__(self, model: DatabaseModel, view: DatabaseTableView):
         super().__init__()
-        self.model = model
-        self.view = view
+        self.__model = model
+        self.__view = view
 
-        self.view.setModel(self.model)
+        self.__view.setModel(self.__model)
 
+    """
+    property
+    * model (override)
+    * view (override)
+    """
+    def model(self) -> DatabaseModel:
+        return self.__model
+
+    def view(self) -> DatabaseTableView:
+        return self.__view
+
+    """
+    method
+    * Run, Stop  (override)
+    """
     def Run(self):
-        self.model.getSignalSet().TableModelUpdated.connect(self.updateViewRequest)
-        self.view.getSignalSet().DeleteDataRequest.connect(CommandSlot(self.deleteVisitorRequest))
-        self.view.getSignalSet().ChangeDataRequest.connect(CommandSlot(self.changeVisitorRequest))
-        self.view.getSignalSet().SortTableRequest.connect(CommandSlot(self.sortDatabaseRequest))
-
-        self.view.render()
+        self._connectSignal(self.model().getSignalSet().TableModelUpdated, self.updateViewRequest)
+        self._connectSignal(self.view().getSignalSet().DeleteDataRequest, CommandSlot(self.deleteVisitorRequest))
+        self._connectSignal(self.view().getSignalSet().ChangeDataRequest, CommandSlot(self.changeVisitorRequest))
+        self._connectSignal(self.view().getSignalSet().SortTableRequest, CommandSlot(self.sortDatabaseRequest))
+        self._connectSignal(self.view().getSignalSet().ChangeDataGroupRequest, CommandSlot(self.changeGroupRequest))
+        self.view().render()
 
     def Stop(self):
-        self.model.getSignalSet().TableModelUpdated.disconnect(self.updateViewRequest)
-        self.view.getSignalSet().DeleteDataRequest.disconnect(CommandSlot(self.deleteVisitorRequest))
-        self.view.getSignalSet().ChangeDataRequest.disconnect(CommandSlot(self.changeVisitorRequest))
+        super().Stop()
+        self.view().render()
 
-        self.view.render()
-
-    @pyqtSlot()
+    """
+    slot
+    """
+    @MyPyqtSlot()
     def updateViewRequest(self):
-        self.view.render()
+        self.view().render()
         #CommandManager.postCommand(View.Table.RenderCommand(self.view), priority=Priority.Low)
 
-    @pyqtSlot(dict)
+    @MyPyqtSlot(dict)
     def addNewVisitorRequest(self, property_dict: Dict[str, str]):
-        idx = self.model.getDataCount()
-        CommandManager.postCommand(View.Table.InsertRowCommand(self.view, idx))
-        CommandManager.postCommand(Model.AddModelCommand(self.model, property_dict))
-        # todo: writeDatabase한 뒤 undo하면 setRowData가 적용이 안됨. 그걸 그냥 여기서 처리하면 좋을듯
-        CommandManager.postCommand(View.Table.FocusCellCommand(self.view, idx, 1))
-        # if self.sender():
-        #     print('add')
-        #     CommandManager.postCommand(EndCommand())
-        # visitor_model = VisitorModel(property_dict)
-        # self.model.addData(visitor_model)
+        idx = self.model().getDataCount()
+        #CommandManager.postCommand(View.Table.InsertRowCommand(self.view(), idx))
+        CommandManager.postCommand(Model.AddModelCommand(self.model(), property_dict))
+        CommandManager.postCommand(View.Table.FocusCellCommand(self.view(), idx, 1))
 
-    @pyqtSlot(int, dict)
+    @MyPyqtSlot(int, dict)
     def changeVisitorRequest(self, idx: int, property_dict: Dict[str, str]):
-        if 0 <= idx < self.model.getDataCount():
-            CommandManager.postCommand(Model.ChangeModelCommand(self.model, idx, property_dict))
-            CommandManager.postCommand(View.Table.FocusCellCommand(self.view, idx, 1))
-            # if self.sender():
-            #     print('change')
-            #     CommandManager.postCommand(EndCommand())
+        if 0 <= idx < self.model().getDataCount():
+            CommandManager.postCommand(Model.ChangeModelCommand(self.model(), idx, property_dict))
+            CommandManager.postCommand(View.Table.FocusCellCommand(self.view(), idx, 1))
         else:
-            ErrorLogger.reportError(f'Invalid Idx: {idx}')
+            ErrorLogger.reportError(f'Invalid Idx: {idx}', IndexError)
 
-    @pyqtSlot(int)
+    @MyPyqtSlot(int)
     def deleteVisitorRequest(self, idx: int):
-        if 0 <= idx < self.model.getDataCount():
-            CommandManager.postCommand(Model.DeleteModelCommand(self.model, idx))
-            CommandManager.postCommand(View.Table.RemoveRowCommand(self.view, idx))
-            CommandManager.postCommand(View.Table.FocusCellCommand(self.view, idx, 1))  # todo removerow 아직 안넣어서 임시
-            # if self.sender():
-            #     print('delete')
-            #     CommandManager.postCommand(EndCommand())
+        if 0 <= idx < self.model().getDataCount():
+            CommandManager.postCommand(Model.DeleteModelCommand(self.model(), idx))
+            #CommandManager.postCommand(View.Table.RemoveRowCommand(self.view(), idx))
+            CommandManager.postCommand(View.Table.FocusCellCommand(self.view(), idx, 1))  # todo removerow 아직 안넣어서 임시
         else:
-            ErrorLogger.reportError(f'Invalid Idx: {idx}')
+            ErrorLogger.reportError(f'Invalid Idx: {idx}', IndexError)
 
-    @pyqtSlot(str)
+    @MyPyqtSlot(str)
     def sortDatabaseRequest(self, field: str) -> None:
-        CommandManager.postCommand(Model.SortTableModelCommand(self.model, field))
-        #self.view.render()
+        CommandManager.postCommand(Model.SortTableModelCommand(self.model(), field))
+
+    @MyPyqtSlot(dict)
+    def changeGroupRequest(self, idx_property_dict: Dict[int, Dict[str, str]]):
+        for idx in idx_property_dict.keys():
+            if 0 <= idx < self.model().getDataCount():
+                self.changeVisitorRequest(idx, idx_property_dict[idx])
+            else:
+                CommandManager.postCommand(View.Table.SetRowTextCommand(self.view(), idx, idx_property_dict[idx]))
+

@@ -14,7 +14,7 @@ class Priority(Enum):
     RightAway = -10000
 
 
-class ExecCommand(AbstractCommand):
+class NullCommand(AbstractCommand):
     def __init__(self):
         super().__init__()
 
@@ -25,23 +25,27 @@ class ExecCommand(AbstractCommand):
         return super().undo()
 
 
-class EndCommand(AbstractCommand):
-    def __init__(self):
-        super().__init__()
-
-    def execute(self) -> bool:
-        return super().execute()
-
-    def undo(self) -> bool:
-        return super().undo()
+class ExecCommand(NullCommand):
+    pass
 
 
-def CommandSlot(original_func, end_command=EndCommand()):
+class EndCommand(NullCommand):
+    pass
+
+
+class FlushCommand(NullCommand):
+    pass
+
+
+def CommandSlot(original_func: Callable[..., bool], end_command=EndCommand()) -> Callable[..., bool]:
     def wrapper(*args, **kargs):
-        result = original_func(*args, **kargs)
-        if end_command:
-            CommandManager.postCommand(end_command)
-        return result
+        try:
+            result = original_func(*args, **kargs)
+            if end_command:
+                CommandManager.postCommand(end_command)
+            return result
+        except Exception as e:
+            ErrorLogger.reportError(f'{original_func.__name__} CommandSlot 실행 도중 에러 발생', e)
     return wrapper
 
 
@@ -53,7 +57,8 @@ class CommandManager(QObject):
         super().__init__()
         self.__exec_command_list: List[AbstractCommand] = []
         self.__command_buffers: List[Tuple[int, int, AbstractCommand]] = []
-        self.__action_histories: List[Action] = []
+        self.__end_func_list: List[Callable[[None], None]] = []
+        self.__action_histories: List[Action] = []  # todo 새로 추가, getter setter 안넣었음 귀찮아서
         self.__current_history_idx = -1
 
     @classmethod
@@ -80,12 +85,17 @@ class CommandManager(QObject):
             cls.__addCommandBuffer(command, priority)
 
     @classmethod
+    def addEndFunction(cls, func: Callable[[None], None]) -> None:
+        cls.__instance().__end_func_list.append(func)
+
+    @classmethod
     def __addCommandBuffer(cls, command: AbstractCommand, priority: Priority):
         count = len(cls.__instance().__command_buffers)
         heapq.heappush(cls.__instance().__command_buffers, (priority.value, count, command))
 
     @classmethod
     def __execCommandBuffer(cls) -> bool:
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         return_value = True
         while cls.__instance().__command_buffers:
             cmd_iter = heapq.heappop(cls.__instance().__command_buffers)[2]
@@ -94,7 +104,8 @@ class CommandManager(QObject):
             else:
                 return_value = False
                 break
-                
+
+        QApplication.restoreOverrideCursor()
         if return_value is True:
             StatusBarManager.setIdleStatus()
             return True
@@ -104,6 +115,7 @@ class CommandManager(QObject):
 
     @classmethod
     def __endCommandBuffer(cls) -> bool:
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         return_value = True
         action = Action()
         if cls.__instance().__exec_command_list:
@@ -117,10 +129,14 @@ class CommandManager(QObject):
             else:
                 return_value = False
                 break
-                
+
+        QApplication.restoreOverrideCursor()
         if return_value is True:
             action.setIsExecuted(True)
             cls.__addHistory(action)
+            for func_iter in cls.__instance().__end_func_list:
+                func_iter()
+            cls.__instance().__end_func_list.clear()
             StatusBarManager.setIdleStatus()
             return True
         else:
@@ -129,6 +145,7 @@ class CommandManager(QObject):
 
     @classmethod  # todo: exec_command_list undo에 추가하여야 하는지?
     def undo(cls) -> bool:
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         return_value = True
         if cls.isUndoEnable():
             if cls.__instance().__exec_command_list:
@@ -144,6 +161,7 @@ class CommandManager(QObject):
         else:
             return_value = False
 
+        QApplication.restoreOverrideCursor()
         if return_value is True:
             StatusBarManager.setIdleStatus()
             return True
@@ -154,6 +172,7 @@ class CommandManager(QObject):
     @classmethod
     def redo(cls) -> bool:
         return_value = True
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         if cls.isRedoEnable():
             if cls.__histories()[cls.__currentHistoryIndex() - 1].execute() is True:
                 cls.__instance().__current_history_idx -= 1
@@ -162,6 +181,7 @@ class CommandManager(QObject):
         else:
             return_value = False
 
+        QApplication.restoreOverrideCursor()
         if return_value is True:
             StatusBarManager.setIdleStatus()
             return True

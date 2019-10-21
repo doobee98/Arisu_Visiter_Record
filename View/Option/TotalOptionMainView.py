@@ -13,7 +13,7 @@ class TotalOptionMainView(AbstractOptionView):
 
         for row_iter, field_iter in enumerate(self.__field_widget_dict.keys()):
             option_iter = self.__model.getOption(field_iter)
-            lbl = BaseUI.basicQLabel(text=self.__model.fieldPrintText(field_iter))
+            lbl = BaseUI.basicQLabel(text=self.__model.fieldPrintText(field_iter), alignment=Qt.AlignLeft)
             gbox.addWidget(lbl, row_iter, 0)
 
             if type(option_iter) == bool:
@@ -43,13 +43,28 @@ class TotalOptionMainView(AbstractOptionView):
         change_dict = {}
         for field_iter, widget_iter in self.__field_widget_dict.items():
             if isinstance(widget_iter, QCheckBox):
-                change_dict[field_iter] = (widget_iter.checkState() == Qt.Checked)
+                old_value = bool(self.__model.getOption(field_iter))
+                new_value = (widget_iter.checkState() == Qt.Checked)
             elif isinstance(widget_iter, QLineEdit):
-                change_dict[field_iter] = widget_iter.text()
+                old_value = str(self.__model.getOption(field_iter))
+                new_value = widget_iter.text()
             else:
-                ErrorLogger.reportError('QCheckbox 또는 QLineEdit중 한 종류여야 합니다.')
-                raise AttributeError
+                ErrorLogger.reportError('QCheckbox 또는 QLineEdit중 한 종류여야 합니다.', AttributeError)
+                return
+            if old_value != new_value:
+                change_dict[field_iter] = new_value
+        has_close = False
+        if any(field_iter in self.__model.getCloseFieldList() for field_iter in change_dict.keys()):
+            reply = QMessageBox.question(self, '종료', '변경할 옵션 중에서 재시작이 필요한 옵션이 있습니다.\n종료하시겠습니까?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.No:
+                self.render()
+                return
+            else:
+                has_close = True
         self.__model.changeOptions(change_dict)
+        if has_close:
+            sys.exit()
 
 
 

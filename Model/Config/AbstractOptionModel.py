@@ -1,53 +1,55 @@
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 import os
-from typing import List
-from Utility.TableInterface.Model.MyModel import *
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from Utility.Abstract.Model.MyModel import *
 from Utility.CryptListModule import *
 
 
 class AbstractOptionModelSignal(QObject):
     OptionChanged = pyqtSignal()
+    CloseRequest = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
 
-class AbstractOptionModel(QObject):
+class AbstractOptionModel(AbstractModel):
     """
     AbstractOptionModel
-    str field와 그에 해당하는 value(str, bool)를 대입할 수 있음.
-    관리 클래스로 MyModel 객체를 사용함(Dict[str, Union[str, bool]])
+    str field와 그에 해당하는 value를 대입할 수 있음.
+    관리 클래스로 MyModel 객체를 사용함(Dict[str, AttrType])
     """
-    OptionType = Union[str, bool]
+    OptionType = AbstractModel.AttrType
 
     def __init__(self, file_name: str, field_list: List[str]):
         super().__init__()
-        self.__signal_set: Type[AbstractOptionModelSignal] = AbstractOptionModelSignal(self)
-        self.__file_name: str = file_name
+        self._setSignalSet(AbstractOptionModelSignal(self))
+        self.setDirectory('')
+        self.setFileName(file_name)
         self.__field_list: List[str] = field_list
+        self.__close_field_list: List[str] = []
         self.__options: MyModel = None
-        #self._load()
+        self.__default_options: MyModel = None
 
-    def getSignalSet(self) -> Type[AbstractOptionModelSignal]:
-        return self.__signal_set
-
-    def _setSignalSet(self, signal_set: Type[AbstractOptionModelSignal]) -> None:
-        self.__signal_set = signal_set
-
-    def _getFileName(self) -> str:
-        return self.__file_name
-
-    def _setFileName(self, file_name: str) -> None:
-        self.__file_name = file_name
-
-    def isFileExist(self) -> bool:
-        return self._getFileName() and os.path.isfile(self._getFileName())
+    def getSignalSet(self) -> AbstractOptionModelSignal:
+        return super().getSignalSet()
 
     def getFieldList(self) -> List[str]:
         return self.__field_list.copy()
 
     def _setFieldList(self, field_list: List[str]) -> None:
         self.__field_list = field_list
+
+    def getCloseFieldList(self) -> List[str]:
+        return self.__close_field_list.copy()
+
+    def _setCloseFieldList(self, close_field_list: List[str]) -> None:
+        self.__close_field_list = close_field_list
+
+    def getDefaultOptions(self) -> MyModel:
+        return self.__default_options
+
+    def _setDefaultOptions(self, options: MyModel):
+        self.__default_options = options
 
     def _getOptionList(self) -> MyModel:
         return self.__options
@@ -65,31 +67,16 @@ class AbstractOptionModel(QObject):
     def changeOptions(self, option_dict: Dict[str, OptionType]) -> None:
         self._getOptionList().changeProperties(option_dict)
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def optionChanged(self) -> None:
-        self.getSignalSet().OptionChanged.emit()
         self.update()
+        self.getSignalSet().OptionChanged.emit()
 
     def update(self) -> None:
         self.save()
 
-    def save(self) -> None:
-        cipher_list = CryptListModule.encrypt([self._getOptionList()]) # only one MyModel
-        with open(self._getFileName(), 'wb') as f:
-            for cipher_text in cipher_list:
-                f.write(cipher_text + b'\n')
+    def _deserialize(self, obj_str: str) -> None:
+        super()._deserialize(obj_str)
+        self.__options.getSignalSet().Updated.connect(self.optionChanged)
 
-    def _load(self) -> None:
-        if self.isFileExist():
-            with open(self._getFileName(), 'rb') as f:
-                cipher_list = f.readlines()
-                option_object = CryptListModule.decrypt(cipher_list, MyModel)[0]  # only one MyModel
-                self._setOptionList(option_object)
-                self.update()  # 이전에 켰을때와 뭔가 바뀐게 있다면 저장하기위해서 로드 하자마자 저장함
-        else:
-            ErrorLogger.reportError(f'Cannot find file {self._getFileName()}.')
-
-    def blockSignals(self, b: bool) -> bool:
-        self.getSignalSet().blockSignals(b)
-        return super().blockSignals(b)
 

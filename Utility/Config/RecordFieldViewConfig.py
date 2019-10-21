@@ -7,7 +7,7 @@ class RecordFieldViewConfig(AbstractFieldConfig):
         FitToContent = -1
         FitTwice = -2
 
-    FieldOptionList = ['fit_type', 'lined_name', 'base_unactivated', 'group_field', 'search_field', 'hide_field']
+    FieldOptionList = ['fit_type', 'lined_name', 'base_unactivated', 'group_field', 'search_field', 'hide_field', 'completer_field']
 
     FieldsDictionary = {
         # value 조건: if value 일시 참이어야함. bool(value) == False이면 안됨
@@ -17,25 +17,31 @@ class RecordFieldViewConfig(AbstractFieldConfig):
             'group_field': True
         },
         '성명': {
-            'search_field': True
+            'search_field': True,
+            'completer_field': True
         },
         '생년월일': {
             'search_field': True
         },
         '차량번호': {
             'fit_type': Option.FitTwice,
-            'group_field': True
+            'group_field': True,
+            'completer_field': True
         },
         '소속': {
             'fit_type': Option.FitTwice,
-            'group_field': True
+            'group_field': True,
+            'completer_field': True
         },
         '방문목적': {
             'fit_type': Option.FitTwice,
-            'group_field': True
+            'group_field': True,
+            'completer_field': True
         },
         '반출입물품명': {
-            'lined_name': '반출입\n물품명'
+            'lined_name': '반출입\n물품명',
+            'completer_field': True
+
         },
         '반입/반출량': {},
         '비고': {
@@ -50,7 +56,8 @@ class RecordFieldViewConfig(AbstractFieldConfig):
         '들어오다근무자': {
             'fit_type': Option.FitToContent,
             'lined_name': '들어오다\n근무자',
-            'base_unactivated': True
+            'base_unactivated': True,
+            'completer_field': True
         },
         '나가다시간': {
             'fit_type': Option.FitToContent,
@@ -60,7 +67,8 @@ class RecordFieldViewConfig(AbstractFieldConfig):
         '나가다근무자': {
             'fit_type': Option.FitToContent,
             'lined_name': '\0나가다\0\n근무자',
-            'base_unactivated': True
+            'base_unactivated': True,
+            'completer_field': True
         },
         '고유번호': {
             'base_unactivated': True,

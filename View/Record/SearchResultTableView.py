@@ -1,11 +1,10 @@
 from Model.Database.VisitorModel import *
 from Model.Record.RecordModel import *
-from Utility.Config.DatabaseFieldViewConfig import *
-from Utility.TableInterface.View.MyTableWidget import *
+from Utility.Abstract.View.Table.MyTableWidget import *
 from Utility.Config.RecordFieldViewConfig import *
 
 
-class SearchResultTableViewSignal(QObject):
+class SearchResultTableViewSignal(MyTableWidgetSignal):
     WriteVisitorRequest = pyqtSignal(dict)
 
     def __init__(self, parent=None):
@@ -63,7 +62,7 @@ class SearchResultTableView(MyTableWidget):
 
                 self.setItem(row_iter, col_iter, proto_item)
 
-    @pyqtSlot(int, int)   # todo - visitor model을 저장하지 말고 그냥 dict만 저장하게 할까?
+    @MyPyqtSlot(int, int)   # todo - visitor model을 저장하지 말고 그냥 dict만 저장하게 할까?
     def myCellDoubleClicked(self, row: int, col: int):
         """
         visitor를 더블클릭하면 visitor의 데이터로 write 요청을 보냄
@@ -82,7 +81,7 @@ class SearchResultTableView(MyTableWidget):
             self.getSignalSet().WriteVisitorRequest.emit(empty_dict)
         self.clearSelection()
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def render(self):
         self.clearTexts()
         self.clearSpans()
@@ -92,7 +91,7 @@ class SearchResultTableView(MyTableWidget):
 
         for row_iter, visitor_iter in enumerate(self.__visitor_model_list):
             for col, field_name in enumerate(self.__field_list):
-                self.item(row_iter, col).setText(visitor_iter.getProperty(field_name))
+                self.item(row_iter, col).setText(str(visitor_iter.getProperty(field_name)))
             
         dummy_row = model_list_length
         self.renderDummy(dummy_row)
@@ -127,7 +126,7 @@ class SearchResultTableView(MyTableWidget):
     
     def renderDummy(self, row: int) -> None:
         self.setSpan(row, 0, 1, self.columnCount())
-        self.item(row, 0).setText('현재 작성 중인 행에 신규 데이터 삽입하기')
+        self.item(row, 0).setText('(동명이인)  현재 작성 중인 행에 신규 데이터 삽입하기')
 
     # override
     def setRowCount(self, rows: int) -> None:

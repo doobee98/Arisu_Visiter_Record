@@ -1,5 +1,4 @@
-from Utility.UI.BaseUI import *
-from Utility.TableInterface.View.Button.ButtonFactory import *
+from Utility.Abstract.View.Button.ButtonFactory import *
 from typing import Callable
 
 

@@ -1,9 +1,9 @@
 from Model.Command.AbstractCommand import *
-from Utility.TableInterface.Model.MyTableModel import *
+from Utility.Abstract.Model.MyTableModel import *
 
 
 class DeleteModelCommand(AbstractCommand):
-    def __init__(self, table_model: Type[MyTableModel], idx: int):
+    def __init__(self, table_model: MyTableModel, idx: int):
         super().__init__()
         self.__table_model = table_model
         self.__idx = idx

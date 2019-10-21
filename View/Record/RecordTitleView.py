@@ -12,9 +12,10 @@ class RecordTitleView(QWidget):
         # 기록부 제목 생성
         group = QGroupBox()
         header_font = BaseUI.basicQFont(bold=True, point_size=BaseUI.defaultPointSize()+12)
+        convert_date = datetime.strptime(date, '%y%m%d').strftime('%Y-%m-%d')
         self.main_lbl = BaseUI.basicQLabel(font=header_font, text='출입자 및 물품 반출입 기록부')
         self.place_lbl = BaseUI.basicQLabel(font=header_font, text=location)
-        self.date_lbl = BaseUI.basicQLabel(font=header_font, text=date)
+        self.date_lbl = BaseUI.basicQLabel(font=header_font, text=convert_date)
 
         # 라벨 스타일링
         date_font = self.date_lbl.font()

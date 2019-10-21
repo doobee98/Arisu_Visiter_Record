@@ -1,7 +1,9 @@
 from Utility.Config.RecordFieldModelConfig import *
-from Utility.TableInterface.Model.MyModel import *
+from Utility.Abstract.Model.MyModel import *
+
 
 class RecordModelSignal(MyModelSignal):
+    StateChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -27,38 +29,48 @@ class RecordModel(MyModel):
         Finished = auto()
         DefaultState = Generated
 
-    def __init__(self, args: Union[Dict[str, Any], str]):
+    def __init__(self, property_dict: Dict[str, AbstractModel.AttrType]):
         self.__state: RecordModel.State = RecordModel.State.DefaultState
-        super().__init__(args)
+        super().__init__(property_dict)
         self._setSignalSet(RecordModelSignal(self))
-        self._adjustState()
+        self._adjustState() # todo: deserialize할때도 저 함수를 호출해야 할까
 
-    def _initWithStr(self, obj_str: str) -> None:
-        super()._initWithStr(obj_str)
-        line_delimeter, arg_delimeter = '\n', '@#@#@'
-        read_mode = 'SuperClass'
+    @classmethod
+    def initNull(cls) -> 'RecordModel':
+        return RecordModel({field: None for field in RecordFieldModelConfig.FieldsDictionary.keys()})
 
-        for line_iter in obj_str.split(line_delimeter):
-            args = line_iter.split(arg_delimeter)
-            head = args[0]
+    """
+    MyOverride
+    * _initWithStr
+    * __str__
+    * getSignalSet
+    * changeProperty, changeProperties
+    """
+    def getSignalSet(self) -> RecordModelSignal:
+        return super().getSignalSet()
 
-            if head == 'RecordModel_Start':
-                read_mode = 'parameter_load'
-                continue
-            elif head == 'RecordModel_End':
-                break
+    def changeProperty(self, field: str, property: str) -> bool:
+        if super().changeProperty(field, property) is True:
+            self._adjustState()
+            # if field == '고유번호':
+            #     self.getSignalSet().IdPropertyChanged.emit()
+            return True
+        else:
+            return False
 
-            if read_mode == 'parameter_load':
-                if head == 'state':
-                    self._setState(RecordModel.State(int(args[1])))
+    def changeProperties(self, property_dict: Dict[str, str]) -> bool:
+        if super().changeProperties(property_dict) is True:
+            self._adjustState()
+            # if '고유번호' in property_dict.keys():
+            #     self.getSignalSet().IdPropertyChanged.emit()
+            return True
+        else:
+            return False
 
-    def __str__(self):
-        obj_str = super().__str__()
-        obj_str += 'RecordModel_Start\n'
-        obj_str += f'state@#@#@{self.getState().value}\n'
-        obj_str += 'RecordModel_End\n'
-        return obj_str
-
+    """
+    property
+    * state
+    """
     def getState(self) -> State:
         return self.__state
 
@@ -91,36 +103,11 @@ class RecordModel(MyModel):
             self._setState(state_adjusted)
             self.getSignalSet().Updated.emit()
 
-    # def isDefaultProperty(self, field: str) -> bool:
-    #     if field == '고유번호':
-    #         return self.getProperty(field) in [RecordModel.IdDefaultString, RecordModel.DefaultString]
-    #     else:
-    #         return self.getProperty(field) == RecordModel.DefaultString
-    #
-    # def _setProperty(self, field: str, property: str) -> None:
-    #     if field == '고유번호' and property == RecordModel.DefaultString:
-    #         super()._setProperty(field, RecordModel.IdDefaultString)
-    #     else:
-    #         super()._setProperty(field, property)
-
-    def changeProperty(self, field : str, property: str) -> bool:
-        if super().changeProperty(field, property) is True:
-            self._adjustState()
-            # if field == '고유번호':
-            #     self.getSignalSet().IdPropertyChanged.emit()
-            return True
-        else:
-            return False
-
-    def changeProperties(self, property_dict: Dict[str, str]) -> bool:
-        if super().changeProperties(property_dict) is True:
-            self._adjustState()
-            # if '고유번호' in property_dict.keys():
-            #     self.getSignalSet().IdPropertyChanged.emit()
-            return True
-        else:
-            return False
-
+    """
+    method
+    * isTakeoverRecord
+    * isRemainAtTime
+    """
     def isTakeoverRecord(self) -> bool:
         take_over_string = self.getProperties().get('인수인계')
         return take_over_string != RecordModel.DefaultString and take_over_string is not None

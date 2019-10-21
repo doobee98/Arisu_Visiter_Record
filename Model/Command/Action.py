@@ -5,12 +5,12 @@ from typing import Type, List
 class Action(AbstractCommand):
     def __init__(self):
         super().__init__()
-        self.__cmd_list: List[Type[AbstractCommand]] = []
+        self.__cmd_list: List[AbstractCommand] = []
 
-    def addCommand(self, cmd: Type[AbstractCommand]):
+    def addCommand(self, cmd: AbstractCommand):
         self.__cmd_list.append(cmd)
 
-    def removeCommand(self, cmd: Type[AbstractCommand]):
+    def removeCommand(self, cmd: AbstractCommand):
         self.__cmd_list.remove(cmd)
 
     def execute(self) -> bool:

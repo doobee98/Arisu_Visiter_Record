@@ -1,126 +1,247 @@
-from Controller.Record.RecordController import *
-from Controller.Database.DatabaseController import *
+from Controller.Record.RecordMainController import *
+from Controller.Database.DatabaseMainController import *
 from Controller.DB_Record_HubController import *
 from Utility.File.LocationSettingDialog import *
 from View.MainView import *
 from Utility.ShortCutManager import *
 
+
+class _ActiveControllerSet:
+    def __init__(self):
+        self.__record_control: RecordMainController = None
+        self.__database_control: DatabaseMainController = None
+        self.__hub_control: DB_Record_HubController = None
+        self.__is_connected: bool = False
+        self.__connect_list: List[pyqtSignal, Callable] = []
+
+    def isConnected(self) -> bool:
+        return self.__is_connected
+
+    def recordController(self) -> RecordMainController:
+        return self.__record_control
+
+    def setRecordController(self, record_control: RecordMainController) -> None:
+        if self.isConnected():
+            self.disconnectController()
+        self.__record_control = record_control
+
+    def databaseController(self) -> DatabaseMainController:
+        return self.__database_control
+
+    def setDatabaseController(self, database_control: DatabaseMainController) -> None:
+        if self.isConnected():
+            self.disconnectController()
+        self.__database_control = database_control
+
+    def connectController(self) -> bool:
+        if self.isConnected() is False and self.__isConnectable():
+            self.__hub_control = DB_Record_HubController(self.databaseController(), self.recordController())
+            self.__hub_control.Run()
+            CompleterListModule.setDatabase(self.__database_control.control_table.view())
+            CompleterListModule.setRecordTable(self.__record_control.control_table.view())
+            StatusBarManager.setLabelConnection(True)
+            self.__is_connected = True
+            return True
+        else:
+            return False
+
+    def disconnectController(self) -> bool:
+        if self.isConnected() is True:
+            StatusBarManager.setLabelConnection(False)
+            CompleterListModule.setDatabase(None)
+            CompleterListModule.setRecordTable(None)
+            self.__hub_control.Stop()
+            self.__hub_control = None
+            self.__is_connected = False
+            return True
+        else:
+            return False
+
+    def __isConnectable(self) -> bool:
+        if self.recordController() is None or self.databaseController() is None:
+            return False
+        return self.recordController().location() == self.databaseController().location()
+
+
 # todo 런, 스탑 시스템 정리할것. 지금은 임시로 해둔 값들이 굉장히 많음
-class MainController(QObject):
+class MainController(AbstractController):
+    MAX_DATABASE = 1
+    MAX_RECORD = 5
     def __init__(self):
         super().__init__()
         QApplication.instance().installEventFilter(self)
-        self.model = None
-        self.view = None
+        if Config.TotalOption.location() is None:
+            location_dialog = LocationSettingDialog()
+            location_dialog.exec_()
 
-        self.active_date = None
-        self.control_dict: Dict[str, Tuple[RecordController, DB_Record_HubController]] = {}
-        self.record_control = None
-        self.database_control = None
-        self.hub_control = None
+        self.__model = None
+        self.__view = MainView()
 
+        self.__database_control_list: List[DatabaseMainController] = []
+        self.__record_control_list: List[RecordMainController] = []
+        self.__active_control_set = _ActiveControllerSet()
         self.__initializeSystem()
-        #self.addRecordController(RecordController(today_string, self.view.record))
 
     def __initializeSystem(self) -> None:
         """
         module loading
         오늘날짜 기록부를 연다
         """
-        Clock.start()
-        if Config.TotalOption.location() is None:
-            location_dialog = LocationSettingDialog()
-            location_dialog.exec_()
-        # todo 임시로 main_view의 렌더링을 늦춰서 location dialog를 통해 입력받은 location이 view에 반영되지 않는 점을 수정함.
-        self.view = MainView()
-        location_string = Config.TotalOption.location()
-        today_string = Clock.getDate().toString('yyMMdd')
-        self.active_date = today_string
+        Clock.start()  # todo 여기있어도 되나?
+        location, today = Config.TotalOption.location(), Clock.getDate().toString('yyMMdd')
+        database_control, record_control = self.openDatabaseFile(location), self.openRecordFile(location, today)
+        if database_control is None or record_control is None:
+            ErrorLogger.reportError('초기 로딩에 오류가 발생했습니다.', FileNotFoundError)
+        self.setActiveDatabase(database_control)
+        self.setActiveRecord(record_control)
+    """
+    property
+    * model
+    * view
+    * activeControllerManager
+    """
+    def model(self) -> None:
+        return None
 
-        self.openDatabase(location_string)
-        self.openRecord(location_string, today_string)
+    def view(self) -> MainView:
+        return self.__view
 
+    def activeControllerManager(self) -> _ActiveControllerSet:
+        return self.__active_control_set
+
+    """
+    method
+    * Run, Stop
+    * activeView
+    * addDatabaseController, removeDatabaseController
+    * addRecordController, removeRecordController
+    * openDatabaseFile
+    * openRecordFile
+    """
     def Run(self):
-        self.view.getSignalSet().OpenDatabaseRequest.connect(self.openDatabase)
-        self.view.getSignalSet().OpenRecordRequest.connect(self.openRecord)
-        self.view.getSignalSet().CloseFileRequest.connect(self.closeRecord)
-        self.view.getSignalSet().ChangeRecordTabSignal.connect(self.changeActiveRecordController)
+        self.view().getSignalSet().OpenDatabaseRequest.connect(
+            lambda loc: self.setActiveDatabase(self.openDatabaseFile(loc)))
+        self.view().getSignalSet().OpenRecordRequest.connect(
+            lambda loc, date: self.setActiveRecord(self.openRecordFile(loc, date)))
+        self.view().getSignalSet().CloseRecordFileRequest.connect(
+            lambda idx: self.removeRecordController(self.__record_control_list[idx-len(self.__database_control_list)]))
+        self.view().getSignalSet().ChangeRecordTabSignal.connect(
+            lambda idx: self.setActiveRecord(self.__record_control_list[idx-len(self.__database_control_list)]))
         # BaseUI.getSignalSet().FontSizeChanged.connect(lambda a, b: self.Run()) 연결 방식 고민하기 stop후 run
 
-        self.runDatabaseController()
-        self.runActiveRecordController(self.active_date)
-        self.view.render()
-        #self.record_control.Run() # todo run을 빼는게 맞나? 아닌데...
-        #self.hub_control.Run()
+        self.activeControllerManager().connectController()
+        # self.activeControllerManager().recordController().Run()
+        # self.activeControllerManager().databaseController().Run()
+
+        self.view().render()
+        self.view().show()
 
     def Stop(self):
-        self.view.getSignalSet().OpenDatabaseRequest.disconnect(self.openDatabase)
-        self.view.getSignalSet().OpenRecordRequest.disconnect(self.openRecord)
-        self.view.getSignalSet().CloseFileRequest.disconnect(self.closeRecord)
-        self.view.getSignalSet().ChangeRecordTabSignal.disconnect(self.changeActiveRecordController)
+        self.view().getSignalSet().OpenDatabaseRequest.disconnect(self.openDatabaseFile)
+        self.view().getSignalSet().OpenRecordRequest.disconnect(self.openRecordFile)
+        self.view().getSignalSet().CloseRecordFileRequest.disconnect(self.closeRecord)
+        self.view().getSignalSet().ChangeRecordTabSignal.disconnect(self.changeActiveRecordController)
         # BaseUI.getSignalSet().FontSizeChanged.connect(lambda a, b: self.Run()) 연결 방식 고민하기 stop후 run
-
-        self.record_control.Stop()
-        self.database_control.Stop()
-        self.hub_control.Stop()
+        self.activeControllerManager().databaseController().Stop()
+        self.activeControllerManager().recordController().Stop()
 
     def activeView(self) -> QWidget:
         if not isinstance(QApplication.activeWindow(), ShowingView):
-            ErrorLogger.reportError('Showing View(Window) not implement ShowingView')
+            ErrorLogger.reportError('Showing View(Window) not implement ShowingView', NotImplementedError)
         return QApplication.activeWindow().activeView()
 
-    def runActiveRecordController(self, record_date: str) -> None:
-        if self.database_control:
-            if self.record_control != self.control_dict[record_date][0]:
-                if self.record_control and self.hub_control:
-                    print(self.record_control.getRecordDate())
-                    self.record_control.Stop()
-                    self.hub_control.Stop()
-                print('Run', record_date)
-                self.record_control = self.control_dict[record_date][0]
-                self.hub_control = self.control_dict[record_date][1]
-                self.active_date = record_date
-                self.record_control.Run()
-                self.hub_control.Run()
+    def addDatabaseController(self, database_control: DatabaseMainController) -> bool:
+        if len(self.__database_control_list) >= MainController.MAX_DATABASE:
+            ErrorLogger.reportError(f'데이터베이스를 {MainController.MAX_DATABASE}개 이상 로드할 수 없습니다.')
+            return False
+        for control_iter in self.__database_control_list:
+            if control_iter.location() == database_control.location():
+                ErrorLogger.reportError(f'같은 장소의 데이터베이스 로딩 시도 ({database_control.location()})')
+                return False
+        self.__database_control_list.append(database_control)
+        return True
 
-    def runDatabaseController(self):
-        if self.database_control:
-            self.database_control.Run()
+    def removeDatabaseController(self, database_control: DatabaseMainController) -> None:
+        try:
+            if self.activeControllerManager().databaseController() == database_control:
+                self.activeControllerManager().setDatabaseController(None)
+                #StatusBarManager.setLabelConnection(False)
+            self.__database_control_list.remove(database_control)
+        except Exception as e:
+            ErrorLogger.reportError(f'존재하지 않는 데이터베이스가 삭제 시도되었습니다.', AttributeError)
 
-    def addRecordController(self, record_control: RecordController) -> None:
-        hub_control = DB_Record_HubController(self.database_control, record_control)
-        self.control_dict[record_control.getRecordDate()] = (record_control, hub_control)
+    def addRecordController(self, record_control: RecordMainController) -> bool:
+        if len(self.__record_control_list) >= MainController.MAX_RECORD:
+            ErrorLogger.reportError(f'데이터베이스를 {MainController.MAX_RECORD}개 이상 로드할 수 없습니다.')
+            return False
+        for control_iter in self.__record_control_list:
+            if (control_iter.recordDate(), control_iter.location()) == (record_control.recordDate(), record_control.location()):
+                ErrorLogger.reportError(f'중복된 기록부 로딩 시도\n'
+                                        f'장소: {record_control.recordDate()}, 날짜: {record_control.location()}')
+                return False
+        self.__record_control_list.append(record_control)
+        return True
 
-    def changeActiveRecordController(self, record_date: str) -> None:
-        if self.active_date != record_date:
-            self.runActiveRecordController(record_date)
+    def removeRecordController(self, record_control: RecordMainController) -> None:
+        try:
+            if self.activeControllerManager().recordController() == record_control:
+                self.activeControllerManager().setRecordController(None)
+                #StatusBarManager.setLabelConnection(False)
+            self.__record_control_list.remove(record_control)
+        except Exception as e:
+            ErrorLogger.reportError(f'존재하지 않는 기록부가 삭제 시도되었습니다.', AttributeError)
 
-    @pyqtSlot(str)
-    def openDatabase(self, location_string: str) -> None:
-        #self.Stop()
-        self.database_control = self.__createDatabaseController(location_string)
-        self.view.addDatabaseTab(self.database_control.view)
-        self.view.tabWidget().setCurrentIndex(0)
-        #self.runDatabaseController()
-        #self.Run()
+    def setActiveDatabase(self, database_control: DatabaseMainController) -> None:
+        if database_control and self.activeControllerManager().databaseController() != database_control:
+            if self.activeControllerManager().databaseController():
+                self.activeControllerManager().databaseController().Stop()
+            self.activeControllerManager().setDatabaseController(database_control)
+            self.activeControllerManager().connectController()
+            database_control.Run()
+            # if self.activeControllerManager().connectController() is True:
+            #     StatusBarManager.setLabelConnection(True)
+            # else:
+            #     StatusBarManager.setLabelConnection(False)
 
-    @pyqtSlot()
+    def setActiveRecord(self, record_control: RecordMainController) -> None:
+        if record_control and self.activeControllerManager().recordController() != record_control:
+            if self.activeControllerManager().recordController():
+                self.activeControllerManager().recordController().Stop()
+            self.activeControllerManager().setRecordController(record_control)
+            self.activeControllerManager().connectController()
+            record_control.Run()
+            # if self.activeControllerManager().connectController() is True:
+            #     StatusBarManager.setLabelConnection(True)
+            # else:
+            #     StatusBarManager.setLabelConnection(False)
+
+    def openDatabaseFile(self, location_string: str) -> Optional[DatabaseMainController]:
+        table_model= DatabaseModel(location_string)
+        view = DatabaseMainView(table_model)
+        new_database_control = DatabaseMainController(table_model, view)
+        if self.addDatabaseController(new_database_control):
+            self.view().addDatabaseTab(new_database_control.view())
+            self.view().tabWidget().setCurrentIndex(0)
+            return new_database_control
+        else:
+            return None
+
+    @MyPyqtSlot()
     def closeDatabase(self) -> None:
         pass
 
-    @pyqtSlot(str, str)
-    def openRecord(self, location_string: str, date_string: str) -> None:
-        if self.database_control == None:
-            ErrorLogger.reportError('데이터베이스가 열려있지 않습니다.')
-            return
-        if date_string not in self.control_dict.keys():
-            record_control = self.__createRecordController(location_string, date_string)
-            self.view.addRecordTab(record_control.view)
-            self.addRecordController(record_control)
-            self.runActiveRecordController(date_string)
-            self.view.tabWidget().setCurrentIndex(self.view.tabWidget().count() - 1)
+    def openRecordFile(self, location_string: str, date_string: str) -> Optional[RecordMainController]:
+        table_model = RecordTableModel(location_string, date_string)
+        view = RecordMainView(table_model)
+        new_record_control = RecordMainController(table_model, view)
+        if self.addRecordController(new_record_control) is True:
+            self.view().addRecordTab(new_record_control.view())
+            self.view().tabWidget().setCurrentIndex(self.__view.tabWidget().count() - 1)
+            return new_record_control
+        else:
+            return None
 
-    @pyqtSlot(str)
+    @MyPyqtSlot(str)
     def closeRecord(self, date_string: str) -> None:
         if date_string in self.control_dict.keys():
             del self.control_dict[date_string]
@@ -128,25 +249,13 @@ class MainController(QObject):
             self.record_control = None
             self.hub_control = None
 
-    def __createRecordController(self, location: str, record_date: str) -> RecordController:
-        table_model = RecordTableModel(location, record_date)
-        view = RecordMainView(table_model)
-        return RecordController(table_model, view)
-
-    def __createDatabaseController(self, location: str) -> DatabaseController:
-        table_model = DatabaseModel(location)
-        view = DatabaseMainView(table_model)
-        return DatabaseController(table_model, view)
-
-    @pyqtSlot()
-    def connectStatusChanged(self):
-        pass
-
-
     def eventFilter(self, widget: 'QObject', event: 'QEvent') -> bool:
         if isinstance(widget, QWindow):
             if event.type() == QEvent.KeyPress:
                 if event.key() == Qt.Key_Control:
+                    # todo: focus widget으로 qlineedit일 때, ctrl c를 허용? 어떤 방법을 사용할지 고민
+                    # todo: table이 아닌, 근무자 등의 다른 창을 보고 있을 때 ctrl c를 어떻게 허용할 지 고민하는 중 (옵션 등에서)
+                    #print(QApplication.activeWindow().focusWidget()) 
                     print('ShortCutMode: active view -', self.activeView())
                     ShortCutManager.runManager(self.activeView())
                     #ShortCutManager.instance().getSignalSet().ShortCutFinished.connect(ShortCutManager.instance().releaseKeyboard)
@@ -156,7 +265,4 @@ class MainController(QObject):
                     print('FinishShortCutMode')
                     ShortCutManager.stopManager()
                     return True
-
         return QApplication.eventFilter(QApplication.instance(), widget, event)
-
-

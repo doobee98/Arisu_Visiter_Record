@@ -1,9 +1,9 @@
 from Model.Command.AbstractCommand import *
-from Utility.TableInterface.View.MyTableView import *
+from Utility.Abstract.View.Table.MyTableView import *
 
 
 class RemoveRowCommand(AbstractCommand):
-    def __init__(self, table_view: Type[MyTableView], row: int):
+    def __init__(self, table_view: MyTableView, row: int):
         super().__init__()
         self.__table_view = table_view
         self.__row = row

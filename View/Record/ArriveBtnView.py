@@ -33,7 +33,7 @@ class ArriveBtnView(QWidget):
     def getSignalSet(self) -> ArriveBtnViewSignal:
         return self.__signal_set
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def arriveBtnClicked(self):
         self.getSignalSet().ArriveBtnClicked.emit()
 

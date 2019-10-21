@@ -4,7 +4,7 @@ from View.Database.DatabaseFilterView import *
 from View.Database.DatabaseButtonView import *
 from View.Database.FunctionGroupView import *
 from Utility.ClockView import *
-from Utility.TableInterface.View.Search.TableSearchDialog import *
+from Utility.Abstract.View.Table.Search.TableSearchDialog import *
 from Utility.ShortCutManager import *
 from Utility.CommandManager import *
 
@@ -26,6 +26,9 @@ class DatabaseMainView(QWidget):
                                     self.function_group.button(ButtonFactory.ButtonType.Search).click)
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
         ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_X, lambda: self.database_table.cutSelectedItems())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_C, lambda: self.database_table.copySelectedItems())
+        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_V, lambda: self.database_table.pasteSelectedItems())
         # todo 임시 테스트
 
         hbox_top = QHBoxLayout()
@@ -49,17 +52,17 @@ class DatabaseMainView(QWidget):
     def __str__(self):
         return 'DatabaseMainView'
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def render(self):
         self.database_table.render()
 
-    def activeView(self) -> Type[QWidget]:
+    def activeView(self) -> QWidget:
         if self.search_dialog.isVisible():
             return self.search_dialog
         else:
             return self
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def searchDialogExec(self) -> None:
         self.search_dialog.exec_()
 

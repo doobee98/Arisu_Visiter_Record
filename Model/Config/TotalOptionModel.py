@@ -1,11 +1,10 @@
-
-from Utility.File.FileNameConfig import *
+from Utility.File.FilePathConfig import *
 from Model.Config.AbstractOptionModel import *
 
 # todo: fieldview config와 fieldmodel config를 어떻게 할지, 그룹을 어떻게 할지
 class TotalOptionModel(AbstractOptionModel):
     def __init__(self):
-        file_name = FileNameConfig.getConfigName('TotalConfig')
+        directory, file_name = FilePathConfig.getConfigPath('TotalConfig')
         self.__printed_dict = {
             #'showing_id': '고유번호를 보이기',
             'base_font_size': '표 글씨 크기',
@@ -14,18 +13,23 @@ class TotalOptionModel(AbstractOptionModel):
         }
         field_list = list(self.__printed_dict.keys())
         super().__init__(file_name, field_list)
-        if self.isFileExist():
-            self._load()
+        self.setDirectory(directory)
+        default_dict = {
+            #'showing_id': True,
+            'base_font_size': 12,
+            'head_location': None,
+            'tail_location': None
+        }
+        self._setDefaultOptions(MyModel(default_dict))
+        self._setCloseFieldList(['head_location', 'tail_location'])
+
+        if self.hasFile():
+            self.load()
+            for field_iter in default_dict.keys():
+                if not self._getOptionList().hasField(field_iter):
+                    self._getOptionList()._setProperty(field_iter, default_dict[field_iter])
         else:
-            # todo: 임시로 대충 만듦
-            print('cannot find file')
-            proto = MyModel({
-                #'showing_id': True,
-                'base_font_size': 12,
-                'head_location': None,
-                'tail_location': None
-            })
-            self._setOptionList(proto)
+            self._setOptionList(self.getDefaultOptions())
             self.update()
 
     def fieldPrintText(self, field: str) -> str:

@@ -1,10 +1,11 @@
-from Utility.UI.BaseUI import *
-
 from View.Option.TotalOptionMainView import *
 from View.Option.RecordOptionMainView import *
 from View.Option.DatabaseOptionMainView import *
-from View.Option.ReadyOptionView import *
-from Utility.ShowingView import *
+from View.Option.Help.ReadyOptionView import *
+from View.Option.Help.HelpShortCutView import *
+from View.Option.FileDirectoryOptionView import *
+from View.Option.Help.MakerView import *
+from Utility.Abstract.View.ShowingView import *
 
 
 class OptionDialog(QDialog, ShowingView):
@@ -13,7 +14,6 @@ class OptionDialog(QDialog, ShowingView):
 
         # todo 임시 준비중 뷰
         ready_view = ReadyOptionView()
-        ready_view.setFont(BaseUI.basicQFont(point_size=BaseUI.defaultPointSize()+2))
 
         self.__options_info_dict: Dict[str, Dict[str, AbstractOptionView]] = {
             '통합': {
@@ -26,7 +26,15 @@ class OptionDialog(QDialog, ShowingView):
             '데이터베이스': {
                 '일반': DatabaseOptionMainView(self),
                 '입력가이드': ready_view
+            },
+            '파일': {
+                '경로': FileDirectoryOptionView(self)
+            },
+            '도움말': {
+                '단축키': HelpShortCutView(self),
+                '제작자': MakerView(self)
             }
+
         }
         max_tail_string = '입력가이드'
 
@@ -83,8 +91,10 @@ class OptionDialog(QDialog, ShowingView):
         right_vbox.addStretch(7)
         right_vbox.addLayout(button_hbox)
         right_vbox.addStretch(1)
+        margin = 30
+        right_vbox.setContentsMargins(margin, margin, margin, margin)
 
-        # 전 레이아웃
+        # 모든 레이아웃
         hbox = QHBoxLayout()
         hbox.addWidget(self.__head_list_widget)
         hbox.addWidget(self.__tail_list_widget)
@@ -101,7 +111,7 @@ class OptionDialog(QDialog, ShowingView):
         # 초기값
         self.__head_list_widget.setCurrentRow(0)
 
-    def activeView(self) -> Type['ShowingView']:
+    def activeView(self) -> 'ShowingView':
         return self
 
     def getHeadList(self) -> List[str]:
@@ -113,7 +123,7 @@ class OptionDialog(QDialog, ShowingView):
     def getOptionView(self, head: str, tail: str) -> AbstractOptionView:
         return self.__options_info_dict[head][tail]
 
-    @pyqtSlot(str)
+    @MyPyqtSlot(str)
     def __headChanged(self, head: str) -> None:
         self.__tail_list_widget.blockSignals(True)
         for row_count in range(self.__tail_list_widget.count()):
@@ -122,28 +132,25 @@ class OptionDialog(QDialog, ShowingView):
         self.__tail_list_widget.addItems(self.getTailList(head))
         self.__tail_list_widget.setCurrentRow(0)
 
-    @pyqtSlot(str)
+    @MyPyqtSlot(str)
     def __tailChanged(self, tail: str) -> None:
         head = self.__head_list_widget.currentItem().text()
         self.__stacked_widget.setCurrentWidget(self.getOptionView(head, tail))
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def applyButtonClicked(self) -> None:
         for head_iter in self.getHeadList():
             for tail_iter in self.getTailList(head_iter):
                 self.getOptionView(head_iter, tail_iter).applyOptionChanges()
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def confirmButtonClicked(self) -> None:
         self.applyButtonClicked()
         self.close()
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def cancelButtonClicked(self) -> None:
         for head_iter in self.getHeadList():
             for tail_iter in self.getTailList(head_iter):
                 self.getOptionView(head_iter, tail_iter).render()
         self.close()
-
-
-

@@ -1,4 +1,4 @@
-from Utility.TableInterface.View.MyTableView import *
+from Utility.Abstract.View.Table.MyTableView import *
 from Model.Database.DatabaseModel import *
 from Utility.Config.DatabaseFieldViewConfig import *
 
@@ -29,7 +29,7 @@ class DatabaseTableView(MyTableView):
         for idx_iter, model_field_iter in enumerate(model_field_list):
             self.setModelField(idx_iter, model_field_iter)
 
-        Config.DatabaseOption.getSignalSet().OptionChanged.connect(self.render)
+        Config.DatabaseOption.getSignalSet().OptionChanged.connect(self.optionChanged)
 
         self.renderHeader()
         self.__initItemOptions()
@@ -56,7 +56,7 @@ class DatabaseTableView(MyTableView):
                 self.setRowOption(row_type, col_iter, Option.Item.Wall)
             if not Config.DatabaseOption.enableFixId():
                 if self.fieldColumn('고유번호') == col_iter:  # todo: 임시로 고유번호 막음
-                    self.setRowOption(row_type, col_iter, DatabaseTableView.Option.Item.Fixed)
+                    self.setRowOption(row_type, col_iter, Option.Item.Fixed)
 
     # override
     def setModelField(self, column: int, model_field: str) -> None:
@@ -79,8 +79,6 @@ class DatabaseTableView(MyTableView):
         # todo 임시, set row count 오버라이딩 필요함
         if self._model():
             self.setRowCount(self._model().getDataCount())
-        self.__initItemOptions()
-        self.initializeItems()
         super().render()
 
     def renderHeader(self) -> None:
@@ -109,13 +107,26 @@ class DatabaseTableView(MyTableView):
     """
     slot
     * headerDoubleClicked
+    * optionChanged
     """
-    @pyqtSlot(int)
+    @MyPyqtSlot(int)
     def headerDoubleClicked(self, idx: int):
         sender_col = idx
         if 0 <= sender_col < self.columnCount():
             sender_field = self.fieldList()[sender_col]
             if sender_field in self.modelFieldList():
                 self.getSignalSet().SortTableRequest.emit(sender_field)
+
+    @MyPyqtSlot()
+    def optionChanged(self):
+        Option = DatabaseTableView.Option
+        row_type = Option.Row.Basic
+        if not Config.DatabaseOption.enableFixId():
+            id_column = self.fieldColumn('고유번호')
+            self.setRowOption(row_type, id_column, Option.Item.Fixed)
+        else:
+            id_column = self.fieldColumn('고유번호')
+            self.setRowOption(row_type, id_column, Option.Item.ReadOnly | MyItemView.Option.White)
+        self.render()
 
 

@@ -1,9 +1,9 @@
 from Model.Command.AbstractCommand import *
-from Utility.TableInterface.Model.MyTableModel import *
+from Utility.Abstract.Model.MyTableModel import *
 
 
 class SortTableModelCommand(AbstractCommand):
-    def __init__(self, table_model: Type[MyTableModel], field: str):
+    def __init__(self, table_model: MyTableModel, field: str):
         super().__init__()
         self.__table_model = table_model
         self.__field = field

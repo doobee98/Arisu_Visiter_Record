@@ -85,7 +85,7 @@ class TakeOverView(QWidget):
 
         # 인수인계 버튼
         self.take_over_btn = BaseUI.basicQPushButton(text='인수인계')
-        self.take_over_btn.clicked.connect(self.takeOverBtnClicked)
+        self.take_over_btn.clicked.connect(self.takeoverBtnClicked)
         self.take_over_btn.setMinimumHeight(int(self.take_over_btn.sizeHint().height() * 1.5))
 
         # 전달사항 버튼
@@ -128,14 +128,14 @@ class TakeOverView(QWidget):
         self.remain_number = visitor_num
         self.remain_lbl.setText(f'잔여인원: {self.remain_number}명')
 
-    @pyqtSlot()
-    def takeOverBtnClicked(self):
+    @MyPyqtSlot()
+    def takeoverBtnClicked(self):
         take_over_team = self.team_cb.currentText()
         take_over_time = self.time_line.text()
         take_over_worker = self.worker_line.text()
 
         self.getSignalSet().TakeOverBtnClicked.emit(take_over_time, take_over_team, take_over_worker)
 
-    @pyqtSlot()
+    @MyPyqtSlot()
     def deliveryBtnClicked(self):
         self.getSignalSet().DeliveryBtnClicked.emit()

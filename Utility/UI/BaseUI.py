@@ -2,7 +2,19 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from Utility.Config.ConfigModule import *
+from Utility.MyPyqtSlot import *
 from typing import Union
+
+
+class MyLineEdit(QLineEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if not self.hasSelectedText():
+            self.selectAll()
+        else:
+            super().mousePressEvent(event)
 
 
 class BaseUISignalSet(QObject):
@@ -14,15 +26,7 @@ class BaseUISignalSet(QObject):
 
 class BaseUI(QObject):
     __DefaultPointSize = Config.TotalOption.baseFontSize()
-    # __Instance = None
     __SignalSet = BaseUISignalSet()
-    # forward declare가 불가능해서 밑에서 함수 연결
-    #
-    # @classmethod
-    # def __instance(cls):
-    #     if cls.__Instance is None:
-    #         cls.__Instance = BaseUI()
-    #     return cls.__Instance
 
     @classmethod
     def getSignalSet(cls) -> BaseUISignalSet:
@@ -94,19 +98,17 @@ class BaseUI(QObject):
                        parent: QWidget = None) -> QLineEdit:
         if font is None:
             font = cls.basicQFont()
-        le = QLineEdit(parent)
+        le = MyLineEdit(parent)
         le.setFont(font)
         le.setAlignment(alignment)
         if text is not None:
             le.setText(text)
         return le
 
-    # def eventFilter(self, widget: 'QObject', event: 'QEvent') -> bool:
-    #     if isinstance(widget, QPushButton) and event.type() == QEvent.FontChange:
-    #         widget.adjustSize()
-    #     if isinstance(widget, QLabel) and event.type() == QEvent.FontChange:
-    #         widget.adjustSize()
-    #     return QObject.eventFilter(self, widget, event)
+    def eventFilter(self, widget: 'QObject', event: 'QEvent') -> bool:
+        if isinstance(widget, QLineEdit) and event.type() == QEvent.FocusIn:
+            widget.selectAll()
+        return QObject.eventFilter(self, widget, event)
 
     @classmethod
     def configChanged(cls) -> None:

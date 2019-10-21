@@ -1,9 +1,9 @@
 from Model.Command.AbstractCommand import *
-from Utility.TableInterface.View.MyTableView import *
+from Utility.Abstract.View.Table.MyTableView import *
 
 
 class SetRowTextCommand(AbstractCommand):
-    def __init__(self, table_view: Type[MyTableView], row: int, text_dict: Dict[str, str]):
+    def __init__(self, table_view: MyTableView, row: int, text_dict: Dict[str, str]):
         super().__init__()
         self.__table_view = table_view
         self.__row = row

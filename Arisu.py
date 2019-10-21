@@ -1,6 +1,7 @@
-import sys
+import sys, traceback
 from PyQt5.QtWidgets import QApplication
 from Controller.MainController import *
+
 
 if __name__ == '__main__':
     try:
@@ -11,7 +12,7 @@ if __name__ == '__main__':
 
         app.exec_()
     except Exception as e:
-        print(e)
+        ExecuteLogger.printLog(str(e) + 'TopLevel Quit')
+        ErrorLogger.reportError('Unexpected TopLevel Quit', e)
     finally:
-        print('@@Finish program@@')
-
+        ExecuteLogger.printLog('@@Finish program@@\n')

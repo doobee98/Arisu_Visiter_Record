@@ -1,9 +1,9 @@
 from Model.Command.AbstractCommand import *
-from Utility.TableInterface.Model.MyTableModel import *
+from Utility.Abstract.Model.MyTableModel import *
 
 
 class InsertModelCommand(AbstractCommand):
-    def __init__(self, table_model: Type[MyTableModel], idx: int, property_dict: Dict[str, str]):
+    def __init__(self, table_model: MyTableModel, idx: int, property_dict: Dict[str, str]):
         super().__init__()
         self.__table_model = table_model
         self.__idx = idx

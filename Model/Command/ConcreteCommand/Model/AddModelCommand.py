@@ -1,9 +1,9 @@
 from Model.Command.AbstractCommand import *
-from Utility.TableInterface.Model.MyTableModel import *
+from Utility.Abstract.Model.MyTableModel import *
 
 
 class AddModelCommand(AbstractCommand):
-    def __init__(self, table_model: Type[MyTableModel], property_dict: Dict[str, str]):
+    def __init__(self, table_model: MyTableModel, property_dict: Dict[str, str]):
         super().__init__()
         self.__table_model = table_model
         self.__property_dict = property_dict
