@@ -9,7 +9,8 @@ class TotalOptionModel(AbstractOptionModel):
             #'showing_id': '고유번호를 보이기',
             'base_font_size': '표 글씨 크기',
             'head_location': '지역',
-            'tail_location': '근무지'
+            'tail_location': '근무지',
+            'enable_delete_check': '삭제 시 알림창 띄우기'
         }
         field_list = list(self.__printed_dict.keys())
         super().__init__(file_name, field_list)
@@ -18,7 +19,8 @@ class TotalOptionModel(AbstractOptionModel):
             #'showing_id': True,
             'base_font_size': 12,
             'head_location': None,
-            'tail_location': None
+            'tail_location': None,
+            'enable_delete_check': True
         }
         self._setDefaultOptions(MyModel(default_dict))
         self._setCloseFieldList(['head_location', 'tail_location'])
@@ -45,7 +47,7 @@ class TotalOptionModel(AbstractOptionModel):
         return int(self._getOptionList().getProperty('base_font_size'))
 
     def setBaseFontSize(self, font_size: int) -> None:
-        self._getOptionList().changeProperty('base_font_size', str(font_size))
+        self._getOptionList().changeProperty('base_font_size', font_size)
 
     def location(self) -> str:
         head = self._getOptionList().getProperty('head_location')
@@ -60,6 +62,12 @@ class TotalOptionModel(AbstractOptionModel):
 
     def setTailLocation(self, tail_location: str) -> None:
         self._getOptionList().changeProperty('tail_location', tail_location)
+
+    def isDeleteCheck(self) -> bool:
+        return self._getOptionList().getProperty('enable_delete_check')
+
+    def setDeleteCheck(self, enable: bool) -> None:
+        self._getOptionList().changeProperty('enable_delete_check', enable)
 
 
 

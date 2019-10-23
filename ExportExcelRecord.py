@@ -5,7 +5,7 @@ import traceback
 if __name__ == '__main__':
     print('Execute')
     try:
-        with open('Excel\\execute_properties.txt', 'rb') as f:
+        with __builtins__.open('Excel\\execute_properties.txt', 'rb') as f:
             location = f.readline().decode().replace('\n', '')
             record_date = f.readline().decode().replace('\n', '')
         ExcelFileModule.exportExcelRecord(location, record_date)

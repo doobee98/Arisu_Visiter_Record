@@ -19,7 +19,7 @@ class ItemLineEdit(QLineEdit):
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.__auto_destroy = True
         self.__item = item
-        self.__completer_original_text: str = None
+        self.__completer_prefix_text: str = None
 
         self.setText(self.__item.text())
         self.selectAll()
@@ -41,6 +41,7 @@ class ItemLineEdit(QLineEdit):
         self.completer().setModel(list_model)
         self.completer().highlighted.connect(self.myFocusCompleter)
         self.completer().popup().setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.textEdited.connect(self.myTextEdited)
         
         # 너비 자동 조정
         popup = self.completer().popup()
@@ -134,17 +135,20 @@ class ItemLineEdit(QLineEdit):
             self.blockSignals(False)
 
     @MyPyqtSlot(str)
+    def myTextEdited(self, s: str):
+        self.__completer_prefix_text = s
+        #self.completer().setCompletionPrefix(s)
+        #print('prefix:', self.__completer_prefix_text)
+
+
+    @MyPyqtSlot(str)
     def myFocusCompleter(self, text: str) -> None:
         selected_indexes = self.completer().popup().selectedIndexes()
         # todo 어떻게 selected text를 잡아낼지에 대해 고민을 좀 해봐야 할듯
         # if len(selected_indexes) == 0:
-        #     if self.__completer_original_text is not None:
-        #         print(self.hasSelectedText())
-        #         self.setText(self.__completer_original_text)
-        #         self.__completer_original_text = None
+        #     print('nonselected', self.__completer_prefix_text)
         # elif len(selected_indexes) == 1:
-        #     if self.__completer_original_text is None:
-        #         self.__completer_original_text = text
+        #     print('selected', self.__completer_prefix_text)
         # else:
         #     ErrorLogger.reportError('자동완성 기능에서 에러가 발생했습니다.\n'
         #                             '두 개 이상의 목록이 선택되었습니다.', EOFError)

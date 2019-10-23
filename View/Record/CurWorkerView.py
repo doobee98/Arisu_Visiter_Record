@@ -17,7 +17,7 @@ class CurWorkerView(QWidget):
         self.lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True, point_size=BaseUI.defaultPointSize()+2),
                                       text='현재 근무자')
         self.line = BaseUI.basicQLineEdit(text=base_worker)
-        self.line.textEdited.connect(Config.HiddenOption.setWorker)
+        self.line.textChanged.connect(Config.HiddenOption.setWorker)
 
         # 현재 근무자 스타일링
         #   lineEdit

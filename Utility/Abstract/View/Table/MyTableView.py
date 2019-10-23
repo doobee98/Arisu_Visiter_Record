@@ -288,6 +288,11 @@ class MyTableView(MyTableWidget):
         if btn and btn.parent():
             sender_row = self.indexAt(btn.parent().pos()).row()
             if self._model() and 0 <= sender_row < self._model().getDataCount():
+                if Config.TotalOption.isDeleteCheck():
+                    reply = QMessageBox.question(self, '알림', f'작성된 데이터가 삭제됩니다. 삭제하시겠습니까?',
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    if reply == QMessageBox.No:
+                        return
                 self.getSignalSet().DeleteDataRequest.emit(sender_row)
             else:
                 self.clearRowTexts(sender_row)  # todo 필요없는 기능일수도 있음
@@ -352,14 +357,14 @@ class MyTableView(MyTableWidget):
                 else:
                     return False
         if self.copySelectedItems() is True:
-            row_iter = None
             row_text_dict: Dict[int, Dict[str, str]] = {}
 
-            for item_iter in self.selectedItems():
-                if row_iter != item_iter.row():
-                    row_iter = item_iter.row()
-                    row_text_dict[row_iter] = {}
-                row_text_dict[row_iter][self.fieldList()[item_iter.column()]] = ''
+            for cut_item_iter in self.selectedItems():
+                row, col = cut_item_iter.row(), cut_item_iter.column()
+                if row_text_dict.get(row) is None:
+                    row_text_dict[row] = {}
+                row_text_dict[row][self.fieldList()[col]] = ''
+
             self.getSignalSet().ChangeDataGroupRequest.emit(row_text_dict)
             return True
         else:

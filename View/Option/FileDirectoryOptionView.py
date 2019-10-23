@@ -40,9 +40,9 @@ class FileDirectoryOptionView(AbstractOptionView):
     def render(self) -> None:
         for field_iter, widget_iter in self.__field_widget_dict.items():
             if isinstance(widget_iter, QCheckBox):
-                widget_iter.setChecked(self.__model.getOption(field_iter))
+                widget_iter.setChecked(bool(self.__model.getOption(field_iter)))
             elif isinstance(widget_iter, (QLineEdit, QLabel)):
-                widget_iter.setText(self.__model.getOption(field_iter))
+                widget_iter.setText(str(self.__model.getOption(field_iter)))
             else:
                 ErrorLogger.reportError('QCheckbox, QLabel 또는 QLineEdit중 한 종류여야 합니다.', AttributeError)
 
