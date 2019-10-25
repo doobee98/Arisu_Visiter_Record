@@ -3,6 +3,7 @@ from Model.Config.HiddenOptionModel import *
 from Model.Config.RecordOptionModel import *
 from Model.Config.DatabaseOptionModel import *
 from Model.Config.FileDirectoryOptionModel import *
+from Model.Config.FilterOptionModel import *
 from tkinter import messagebox
 import sys
 
@@ -32,3 +33,4 @@ class Config:
     HiddenOption = HiddenOptionModel()
     RecordOption = RecordOptionModel()
     DatabaseOption = DatabaseOptionModel()
+    FilterOption = FilterOptionModel()

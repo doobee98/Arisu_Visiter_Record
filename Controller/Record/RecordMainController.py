@@ -1,6 +1,6 @@
 from View.Record.RecordMainView import *
 from Controller.Record.RecordTableController import *
-
+from Utility.Abstract.View.MyMessageBox import *
 from Controller.AbstractController import *
 
 
@@ -66,7 +66,7 @@ class RecordMainController(AbstractController):
         self._connectSignal(self.view().leave.getSignalSet().LeaveBtnClicked,
                             CommandSlot(self.leaveRecordRequest, end_command=None))
         self._connectSignal(self.view().arrive_btn.getSignalSet().ArriveBtnClicked, CommandSlot(self.arriveRequest))
-        self._connectSignal(self.view().take_over.getSignalSet().TakeOverBtnClicked, CommandSlot(self.takeoverRequest))
+        self._connectSignal(self.view().take_over.getSignalSet().TakeoverBtnClicked, CommandSlot(self.takeoverRequest))
         self._connectSignal(self.view().search_table.getSignalSet().WriteVisitorRequest,
                             CommandSlot(self.writeDataToRecordTableRequest, end_command=ExecCommand()))
         self._connectSignal(self.view().getSignalSet().UpdateDatabaseRequest, self.updateDatabase)
@@ -176,9 +176,8 @@ class RecordMainController(AbstractController):
         message_string += '전달사항\n'
         message_string += delivery_string + '\n'
 
-        reply = QMessageBox.question(self.view(), '확인', message_string,
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if reply == QMessageBox.No:
+        reply = MyMessageBox.question(self.view(), '확인', message_string)
+        if reply != MyMessageBox.Yes:
             return
         else:
             try:

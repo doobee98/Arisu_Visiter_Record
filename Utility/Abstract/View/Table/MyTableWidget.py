@@ -1,4 +1,5 @@
 from Utility.Abstract.View.Table.ItemLineEdit import *
+from Utility.Abstract.View.MyMessageBox import *
 from Utility.ShortCutManager import *
 
 
@@ -110,9 +111,8 @@ class MyTableWidget(QTableWidget):
     def cutSelectedItems(self) -> bool:
         for item_iter in self.selectedItems():
             if not item_iter.flags() & Qt.ItemIsEditable:
-                reply = QMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?',
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                reply = MyMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?')
+                if reply == MyMessageBox.Yes:
                     break
                 else:
                     return False
@@ -173,9 +173,8 @@ class MyTableWidget(QTableWidget):
                     selection.append(self.item(row + row_iter, col + col_iter))
         for item_iter in selection:
             if not item_iter.flags() & Qt.ItemIsEditable:
-                reply = QMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?',
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                reply = MyMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?')
+                if reply == MyMessageBox.Yes:
                     break
                 else:
                     return False
@@ -289,7 +288,6 @@ class MyTableWidget(QTableWidget):
     # todo 급하게 넣은 기능, 엔터치면 다음줄로 가는 것을 itemlineedit 뿐만 아니라 전체에서 적용시키기
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key_Return and event.spontaneous() is True:
-            print('MyTableWidget Event')
             self.setFocusCell(self.currentRow() + 1, 1)
         super().keyPressEvent(event)
 

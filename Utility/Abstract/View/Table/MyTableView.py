@@ -2,6 +2,7 @@ from Utility.Abstract.View.Table.MyModelViewFactory import *
 from Utility.Abstract.View.Button.DefaultButtonFactory import *
 from Utility.Abstract.Model.MyTableModel import *
 from Utility.Abstract.View.Table.MyTableWidget import *
+from Utility.Abstract.View.MyMessageBox import *
 
 
 class MyTableViewSignal(MyTableWidgetSignal):
@@ -289,11 +290,11 @@ class MyTableView(MyTableWidget):
             sender_row = self.indexAt(btn.parent().pos()).row()
             if self._model() and 0 <= sender_row < self._model().getDataCount():
                 if Config.TotalOption.isDeleteCheck():
-                    reply = QMessageBox.question(self, '알림', f'작성된 데이터가 삭제됩니다. 삭제하시겠습니까?',
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.No:
+                    reply = MyMessageBox.question(self, '알림', f'작성된 데이터가 삭제됩니다. 삭제하시겠습니까?')
+                    if reply == MyMessageBox.Yes:
+                        self.getSignalSet().DeleteDataRequest.emit(sender_row)
+                    else:
                         return
-                self.getSignalSet().DeleteDataRequest.emit(sender_row)
             else:
                 self.clearRowTexts(sender_row)  # todo 필요없는 기능일수도 있음
                 self.setFocusCell(sender_row, 1)
@@ -350,9 +351,8 @@ class MyTableView(MyTableWidget):
     def cutSelectedItems(self) -> bool:
         for item_iter in self.selectedItems():
             if not item_iter.flags() & Qt.ItemIsEditable:
-                reply = QMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?',
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                reply = MyMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?')
+                if reply == MyMessageBox.Yes:
                     break
                 else:
                     return False
@@ -400,9 +400,8 @@ class MyTableView(MyTableWidget):
                     selection.append(self.item(row + row_iter, col + col_iter))
         for item_iter in selection:
             if not item_iter.flags() & Qt.ItemIsEditable:
-                reply = QMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?',
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                reply = MyMessageBox.question(self, '알림', f'작성된 데이터 내용이 변경됩니다. 편집하시겠습니까?')
+                if reply == MyMessageBox.Yes:
                     break
                 else:
                     return False

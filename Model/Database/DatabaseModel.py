@@ -3,6 +3,8 @@ from Model.Database.VisitorModel import *
 from Utility.Config.DatabaseFieldModelConfig import *
 from Utility.Clock import *
 from Utility.Config.ConfigModule import *
+from Utility.Abstract.View.MyMessageBox import *
+
 
 class DatabaseModelSignal(MyTableModelSignal):
     """
@@ -109,12 +111,11 @@ class DatabaseModel(MyTableModel):
         if delete_idx_list:
             question_string = f'출입한 지 {save_deadline}일이 지난 데이터 {len(delete_idx_list)} 건이 검색되었습니다.\n'
             question_string += '삭제하시겠습니까?'
-            reply = QMessageBox.question(QApplication.activeWindow(), '삭제', question_string,
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.No:
-                return
-            else:
+            reply = MyMessageBox.question(QApplication.activeWindow(), '삭제', question_string)
+            if reply == MyMessageBox.Yes:
                 delete_idx_list.reverse()  # 뒤에부터 지워야 idx가 그대로 유효함(앞에서부터 지우면 한칸씩 땡겨짐)
                 for idx in delete_idx_list:
                     self.deleteData(idx)
+            else:
+                return
 

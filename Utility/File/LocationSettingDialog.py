@@ -28,17 +28,16 @@ class LocationSettingDialog(QDialog):
 
     def locationButtonClicked(self) -> None:
         if not (self.first_location_le.text() or self.second_location_le.text()):
-            QMessageBox.information(self, '알림', '장소와 근무지를 입력해 주세요.')
+            MyMessageBox.information(self, '알림', '장소와 근무지를 입력해 주세요.')
             return
         else:
             head_location = self.first_location_le.text()
             tail_location = self.second_location_le.text()
             location_string = head_location + ' ' + tail_location
-            reply = QMessageBox.question(self, '알림', f'<{location_string}>이 맞습니까?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.No:
-                return
-            else:
+            reply = MyMessageBox.question(self, '알림', f'<{location_string}>이 맞습니까?')
+            if reply == MyMessageBox.Yes:
                 Config.TotalOption.setHeadLocation(head_location)
                 Config.TotalOption.setTailLocation(tail_location)
                 self.close()
+            else:
+                return

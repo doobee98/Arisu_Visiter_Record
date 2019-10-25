@@ -1,5 +1,5 @@
-from Utility.Config.ConfigModule import *
 from Utility.Config.AbstractFieldConfig import *
+
 
 class RecordFieldViewConfig(AbstractFieldConfig):
     class Option(AbstractFieldConfig.Option):
@@ -7,7 +7,8 @@ class RecordFieldViewConfig(AbstractFieldConfig):
         FitToContent = -1
         FitTwice = -2
 
-    FieldOptionList = ['fit_type', 'lined_name', 'base_unactivated', 'group_field', 'search_field', 'hide_field', 'completer_field']
+    FieldOptionList = ['fit_type', 'lined_name', 'base_unactivated', 'group_field', 'search_field', 'hide_field',
+                       'completer_field', 'time_field']
 
     FieldsDictionary = {
         # value 조건: if value 일시 참이어야함. bool(value) == False이면 안됨
@@ -51,7 +52,8 @@ class RecordFieldViewConfig(AbstractFieldConfig):
         '들어오다시간': {
             'fit_type': Option.FitToContent,
             'lined_name': '들어오다\n시간',
-            'base_unactivated': True
+            'base_unactivated': True,
+            'time_field': True
         },
         '들어오다근무자': {
             'fit_type': Option.FitToContent,
@@ -62,7 +64,8 @@ class RecordFieldViewConfig(AbstractFieldConfig):
         '나가다시간': {
             'fit_type': Option.FitToContent,
             'lined_name': '\0나가다\0\n시간',
-            'base_unactivated': True
+            'base_unactivated': True,
+            'time_field': True
         },
         '나가다근무자': {
             'fit_type': Option.FitToContent,

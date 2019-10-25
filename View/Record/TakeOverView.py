@@ -1,15 +1,15 @@
 from Utility.UI.BaseUI import *
 
 
-class TakeOverViewSignal(QObject):
-    TakeOverBtnClicked = pyqtSignal(str, str, str)
+class TakeoverViewSignal(QObject):
+    TakeoverBtnClicked = pyqtSignal(str, str, str)
     DeliveryBtnClicked = pyqtSignal()
 
     def __init__(self, parent = None):
         super().__init__(parent)
 
 
-class TakeOverView(QWidget):
+class TakeoverView(QWidget):
     DefaultWorker = '근무자'
     DefaultTime = '08:00'
 
@@ -17,7 +17,7 @@ class TakeOverView(QWidget):
         super().__init__()
 
         # 시그널 정의
-        self.__signal_set = TakeOverViewSignal()
+        self.__signal_set = TakeoverViewSignal()
 
         # 전체 그룹 박스
         self.group = QGroupBox('인수인계')
@@ -56,7 +56,8 @@ class TakeOverView(QWidget):
         self.worker_group = QGroupBox()
         # self.worker_lbl = QLabel('교대자')
         self.worker_lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True), text='교대자')
-        self.worker_line = BaseUI.basicQLineEdit(text=TakeOverView.DefaultWorker)
+        self.worker_line = BaseUI.basicQLineEdit(text=TakeoverView.DefaultWorker)
+        self.worker_line.installFilterFunctions(Config.FilterOption.activeFunctionList('성명'))
         #self.worker_line.setFixedWidth(100)
 
         # 교대자 이름 레이아웃
@@ -71,7 +72,9 @@ class TakeOverView(QWidget):
         # 교대 시각
         self.time_group = QGroupBox()
         self.time_lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True), text='교대시각')
-        self.time_line = BaseUI.basicQLineEdit(text=TakeOverView.DefaultTime)
+        self.time_line = BaseUI.basicQLineEdit(text=TakeoverView.DefaultTime)
+        self.time_line.setTimeMask()
+        #self.time_line.editingFinished.connect(lambda: self.time_line.setText(Config.FilterOption.FilterFunction.time(self.time_line.text())))
         #self.time_line.setFixedWidth(100)
 
         # 교대 시각 레이아웃
@@ -115,14 +118,14 @@ class TakeOverView(QWidget):
         self.setLayout(vbox)
 
     def __str__(self):
-        return 'TakeOverView'
+        return 'TakeoverView'
 
-    def getSignalSet(self) -> TakeOverViewSignal:
+    def getSignalSet(self) -> TakeoverViewSignal:
         return self.__signal_set
 
     def setLineEditsDefault(self):
-        # self.time_line.setText(TakeOverView.DefaultTime)
-        self.worker_line.setText(TakeOverView.DefaultWorker)
+        # self.time_line.setText(TakeoverView.DefaultTime)
+        self.worker_line.setText(TakeoverView.DefaultWorker)
 
     def setCurrentVisitorNumber(self, visitor_num: int) -> None:
         self.remain_number = visitor_num
@@ -134,7 +137,7 @@ class TakeOverView(QWidget):
         take_over_time = self.time_line.text()
         take_over_worker = self.worker_line.text()
 
-        self.getSignalSet().TakeOverBtnClicked.emit(take_over_time, take_over_team, take_over_worker)
+        self.getSignalSet().TakeoverBtnClicked.emit(take_over_time, take_over_team, take_over_worker)
 
     @MyPyqtSlot()
     def deliveryBtnClicked(self):

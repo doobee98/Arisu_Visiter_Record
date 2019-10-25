@@ -9,7 +9,7 @@ class RecordOptionModel(AbstractOptionModel):
         self.__printed_dict = {
             'showing_id': '고유번호를 보이기',
             'enable_fix_id': '고유번호 수정 가능',
-            'completer_from_db': '데이터베이스에서 자동완성 텍스트 가져오기',
+            'completer_from_db': '데이터베이스에서 자동완성 텍스트 가져오기\n(한글 반응성은 좋지 않습니다.)',
             'auto_update_db_with_leave': '[나가기] 클릭시 데이터베이스 자동 업데이트\n(사용 시 프로그램 속도가 저하됩니다.)'
             #'base_font_size': '표 글씨 크기'
         }

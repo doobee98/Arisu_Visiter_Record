@@ -7,7 +7,6 @@ from Utility.Log.ExecuteLogger import *
 from PyQt5.QtWidgets import QApplication
 
 
-
 class ShortCutManagerSignal(QObject):
     ShortCutFinished = pyqtSignal()
 

@@ -32,6 +32,7 @@ class LeaveView(QWidget):
         self.idnum_group = QGroupBox()
         self.idnum_lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True), text='출입증 번호')
         self.idnum_line = BaseUI.basicQLineEdit(text=LeaveView.DefaultIDNumBlank)
+        self.idnum_line.installFilterFunctions(Config.FilterOption.activeFunctionList('출입증번호'))
 
         # 출입증 번호 스타일링
         #   line
@@ -48,6 +49,7 @@ class LeaveView(QWidget):
         self.name_lbl = BaseUI.basicQLabel(font=BaseUI.basicQFont(bold=True), text='성명')
 
         self.name_line = BaseUI.basicQLineEdit(text=LeaveView.DefaultNameAll)
+        self.name_line.installFilterFunctions(Config.FilterOption.activeFunctionList('성명'))
 
         # 성명 스타일링
         #   line

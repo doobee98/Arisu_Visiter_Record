@@ -76,7 +76,7 @@ class MainView(QMainWindow, ShowingView):
         # 하단 상태바 초기화 및 statusBar Manager 초기화
         self.statusBar().setFont(BaseUI.basicQFont())
         StatusBarManager.setStatusBar(self.statusBar())
-        StatusBarManager.setMessage('프로그램 초기화', 3000)
+        StatusBarManager.setMessage('프로그램 초기화')
 
         # 메인화면 레이아웃
         self.setCentralWidget(self.__tab_widget)
@@ -126,17 +126,15 @@ class MainView(QMainWindow, ShowingView):
         self.__config_view.exec_()
 
     def dayoutDialogExec(self) -> None:
-        reply = QMessageBox.question(self, '알림', '날짜가 바뀌었습니다.\n'
-                                                 '마감 후 새로운 기록부를 만드시겠습니까?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if reply == QMessageBox.No:
-            return
-        else:
+        reply = MyMessageBox.question(self, '알림', '날짜가 바뀌었습니다.\n', '마감 후 새로운 기록부를 만드시겠습니까?')
+        if reply == MyMessageBox.Yes:
             try:
                 self.__record.reportExcel()
                 self.createTodayRecord()
             except Exception as e:
                 ErrorLogger.reportError('날짜 바꿈 에러', e)
+        else:
+            return
 
     def createTodayRecord(self) -> None:
         self.getSignalSet().OpenRecordRequest.emit(Config.TotalOption.location(), Clock.getDate().toString('yyMMdd'))
@@ -230,7 +228,7 @@ class MainView(QMainWindow, ShowingView):
     render
     """
     def render(self):
-        pass
+        StatusBarManager.setIdleStatus()
 
 
 

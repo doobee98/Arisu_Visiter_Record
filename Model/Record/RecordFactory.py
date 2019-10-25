@@ -5,7 +5,7 @@ class RecordFactory:
     def createRecord(cls, property_dict: Dict[str, str]):
         return RecordModel(property_dict)
 
-    def createTakeOverRecord(cls, take_over_str: str):
+    def createTakeoverRecord(cls, take_over_str: str):
         record = RecordFactory.createEmptyRecord()
         record.changeProperty('고유번호', take_over_str)
         return record

@@ -46,3 +46,9 @@ class DatabaseFilterTableView(MyTableWidget):
             proto_item.setTextAlignment(Qt.AlignCenter)
 
             self.setItem(0, col_iter, proto_item)
+
+    def editItem(self, item: QTableWidgetItem) -> None:
+        super().editItem(item)
+        line_edit: ItemLineEdit = self.cellWidget(item.row(), item.column())
+        field = self.__field_list[item.column()]
+        line_edit.installFilterFunctions(Config.FilterOption.activeFunctionList(field))

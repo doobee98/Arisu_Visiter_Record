@@ -2,7 +2,7 @@ from View.Record.RecordTitleView import *
 from Utility.ClockView import *
 from View.Record.CurWorkerView import *
 from View.Record.LeaveView import *
-from View.Record.TakeOverView import *
+from View.Record.TakeoverView import *
 from View.Record.SearchResultTableView import *
 from View.Record.ArriveBtnView import *
 from View.Record.ScrollButtonView import *
@@ -13,7 +13,7 @@ from View.Record.RemainNumberBoxView import *
 from Utility.Abstract.View.Table.Search.TableSearchDialog import *
 from Utility.DeliveryDialog import *
 from Utility.ShortCutManager import *
-
+from Utility.Abstract.View.MyMessageBox import *
 from Utility.CommandManager import *
 import subprocess
 
@@ -38,7 +38,7 @@ class RecordMainView(QWidget):
         self.title = RecordTitleView(date, location)
         self.clock = ClockView()
         self.search_table = SearchResultTableView()
-        self.take_over = TakeOverView()
+        self.take_over = TakeoverView()
         self.cur_worker = CurWorkerView()
         self.scroll_btn = ScrollButtonView()
         self.arrive_btn = ArriveBtnView()
@@ -142,10 +142,9 @@ class RecordMainView(QWidget):
             with open('Excel/execute_properties.txt', 'wb') as f:
                 f.write((self.__tableModel().getLocation() + '\n').encode())
                 f.write((self.__tableModel().getRecordDate() + '\n').encode())
-
             StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
             subprocess.call('.\\\\Excel\\\\ExportExcelRecord.exe')
-            QMessageBox.information(self, '알림', '마감 파일이 생성되었습니다.')
+            MyMessageBox.information(self, '알림', '마감 파일이 생성되었습니다.')
         except Exception as e:
             ErrorLogger.reportError('마감 파일 생성중 오류가 발생했습니다.\n'
                                     'Excel 폴더에 ExportExcelRecord.exe 파일이 존재하는지 확인해 주세요.')

@@ -259,9 +259,13 @@ class RecordTableView(MyTableView):
     def editItem(self, item: QTableWidgetItem) -> None:
         super().editItem(item)
         line_edit: ItemLineEdit = self.cellWidget(item.row(), item.column())
+        field = self.fieldList()[item.column()]
+        line_edit.installFilterFunctions(Config.FilterOption.activeFunctionList(field))
         completer_list = CompleterListModule.getCompleterList(item.row(), item.column())
         if completer_list:
             line_edit.setCompleterList(completer_list)
+        if RecordFieldViewConfig.getOption(self.fieldList()[item.column()], 'time_field') is True:
+            line_edit.setTimeMask()
 
     def openPersistentEditor(self, item: QTableWidgetItem) -> None:
         # todo 버그때문에 잠금

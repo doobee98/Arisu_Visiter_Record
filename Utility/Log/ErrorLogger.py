@@ -1,6 +1,7 @@
 import inspect, sys, traceback
 from datetime import datetime
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QApplication
+from Utility.Abstract.View.MyMessageBox import *
 from Utility.File.FilePathConfig import *
 
 
@@ -22,12 +23,12 @@ class ErrorLogger:
             cls.__writeReportFile(error_string)
 
             if exception:
-                QMessageBox.critical(QApplication.activeWindow(), '위험', what + '\n' + str(exception))
+                MyMessageBox.critical(QApplication.activeWindow(), '위험', what + '\n' + str(exception))
                 sys.exit()
             else:
-                QMessageBox.warning(QApplication.activeWindow(), '경고', what)
+                MyMessageBox.warning(QApplication.activeWindow(), '경고', what)
         except Exception as e:
-            QMessageBox.critical(QApplication.activeWindow(), '위험',
+            MyMessageBox.critical(QApplication.activeWindow(), '위험',
                                  'ErrorLogger -처리할 수 없는 에러입니다.' + '\n' + str(e))
 
     @classmethod

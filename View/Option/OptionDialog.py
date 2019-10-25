@@ -4,6 +4,7 @@ from View.Option.DatabaseOptionMainView import *
 from View.Option.Help.ReadyOptionView import *
 from View.Option.Help.HelpShortCutView import *
 from View.Option.FileDirectoryOptionView import *
+from View.Option.FieldFilterOptionView import *
 from View.Option.Help.MakerView import *
 from Utility.Abstract.View.ShowingView import *
 
@@ -12,31 +13,29 @@ class OptionDialog(QDialog, ShowingView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # todo 임시 준비중 뷰
-        ready_view = ReadyOptionView()
-
         self.__options_info_dict: Dict[str, Dict[str, AbstractOptionView]] = {
             '통합': {
                 '일반': TotalOptionMainView(self)
             },
             '기록부': {
-                '일반': RecordOptionMainView(self),
-                '입력가이드': ready_view
+                '일반': RecordOptionMainView(self)
            },
             '데이터베이스': {
-                '일반': DatabaseOptionMainView(self),
-                '입력가이드': ready_view
+                '일반': DatabaseOptionMainView(self)
             },
+            # 입력필터 옵션은 두번째 list를 자체적으로 쪼개서(field 목록으로) 사용
+            '입력 필터': {field: FieldFilterOptionView(field, self) for field in Config.FilterOption.getFieldList()},
             '파일': {
                 '경로': FileDirectoryOptionView(self)
             },
             '도움말': {
                 '단축키': HelpShortCutView(self),
+                '업데이트': ReadyOptionView(self),
                 '제작자': MakerView(self)
             }
 
         }
-        max_tail_string = '입력가이드'
+        max_tail_string = '들어오다근무자'
 
         # 옵션 head list widget
         self.__head_list_widget = QListWidget()
@@ -51,8 +50,11 @@ class OptionDialog(QDialog, ShowingView):
         # 리스트 위젯 스타일링
         self.__head_list_widget.setFont(BaseUI.basicQFont(point_size=BaseUI.defaultPointSize()+1))
         self.__tail_list_widget.setFont(BaseUI.basicQFont(point_size=BaseUI.defaultPointSize()+1))
-        self.__head_list_widget.setFixedWidth(self.__head_list_widget.sizeHintForColumn(0) + 2 * self.__head_list_widget.frameWidth())
-        self.__tail_list_widget.setFixedWidth(self.__tail_list_widget.sizeHintForColumn(0) + 2 * self.__tail_list_widget.frameWidth())
+        self.__head_list_widget.setFixedWidth(self.__head_list_widget.sizeHintForColumn(0)
+                                              + 2 * self.__head_list_widget.frameWidth())
+        self.__tail_list_widget.setFixedWidth(self.__tail_list_widget.sizeHintForColumn(0)
+                                              + 2 * self.__tail_list_widget.frameWidth()
+                                              + self.__tail_list_widget.verticalScrollBar().sizeHint().width())
 
         #   tail list widget 너비 설정용 임시값 초기화
         self.__tail_list_widget.takeItem(0)

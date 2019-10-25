@@ -7,7 +7,7 @@ class DatabaseFieldViewConfig(AbstractFieldConfig):
         FitToContent = -1
         FitTwice = -2
 
-    FieldOptionList = ['fit_type', 'lined_name', 'auto_generate', 'hide_field']
+    FieldOptionList = ['fit_type', 'lined_name', 'auto_generate', 'hide_field', 'date_field']
 
     FieldsDictionary = {
         # value 조건: if value 일시 참이어야함. bool(value) == False이면 안됨
@@ -36,12 +36,14 @@ class DatabaseFieldViewConfig(AbstractFieldConfig):
         '최초출입날짜': {
             'fit_type': Option.FitToContent,
             'lined_name': '최초 출입날짜',
-            'auto_generate': True
+            'auto_generate': True,
+            'date_field': True
         },
         '최근출입날짜': {
             'fit_type': Option.FitToContent,
             'lined_name': '최근 출입날짜',
-            'auto_generate': True
+            'auto_generate': True,
+            'date_field': True
         }
     }
 

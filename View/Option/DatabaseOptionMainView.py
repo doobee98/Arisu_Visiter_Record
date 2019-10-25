@@ -1,6 +1,7 @@
 from Utility.Config.ConfigModule import *
 from Utility.UI.BaseUI import *
 from View.Option.AbstractOptionView import *
+from Utility.Abstract.View.MyMessageBox import *
 
 
 # todo 현재는 baseUI에서 폰트 크기 변경 설정을 켜지 않았기 때문에, 숫자를 바꾸면 껐다 켜야만 확인이 가능함
@@ -54,13 +55,12 @@ class DatabaseOptionMainView(AbstractOptionView):
                 change_dict[field_iter] = new_value
         has_close = False
         if any(field_iter in self.__model.getCloseFieldList() for field_iter in change_dict.keys()):
-            reply = QMessageBox.question(self, '종료', '변경할 옵션 중에서 재시작이 필요한 옵션이 있습니다.\n종료하시겠습니까?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.No:
+            reply = MyMessageBox.question(self, '종료', '변경할 옵션 중에서 재시작이 필요한 옵션이 있습니다.\n종료하시겠습니까?')
+            if reply == MyMessageBox.Yes:
+                has_close = True
+            else:
                 self.render()
                 return
-            else:
-                has_close = True
         self.__model.changeOptions(change_dict)
         if has_close:
             sys.exit()

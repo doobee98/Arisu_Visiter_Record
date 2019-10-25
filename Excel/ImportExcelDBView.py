@@ -1,5 +1,6 @@
 from Utility.UI.BaseUI import *
 from Excel.ExcelFileModule import *
+from Utility.Abstract.View.MyMessageBox import *
 
 class ImportExcelDBView(QDialog):
     def __init__(self):
@@ -29,13 +30,12 @@ class ImportExcelDBView(QDialog):
     @MyPyqtSlot()
     def importButtonClicked(self) -> None:
         if not (self.head_location_le.text() or self.tail_location_le.text()):
-            QMessageBox.information(self, '알림', '장소와 근무지를 모두 입력해 주세요.')
+            MyMessageBox.information(self, '알림', '장소와 근무지를 모두 입력해 주세요.')
             return
         else:
             location_string = self.head_location_le.text() + ' ' + self.tail_location_le.text()
-            reply = QMessageBox.question(self, '알림', f'<{location_string}>이 맞습니까?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.No:
+            reply = MyMessageBox.question(self, '알림', f'<{location_string}>이 맞습니까?')
+            if reply != MyMessageBox.Yes:
                 return
             else:
                 name = QFileDialog.getOpenFileName(self, '엑셀 파일 열기', './', '*.xlsm')
@@ -43,9 +43,9 @@ class ImportExcelDBView(QDialog):
                     file_name = name[0]
                     result = ExcelFileModule.importExcelDatabase(location_string, file_name)
                     if result is None:
-                        QMessageBox.information(self, '알림', '로딩 실패 - 이미 해당 지역의 DB가 존재합니다.')
+                        MyMessageBox.information(self, '알림', '로딩 실패 - 이미 해당 지역의 DB가 존재합니다.')
                     else:
-                        QMessageBox.information(self, '알림', result.fileName() + ' 저장 완료')
+                        MyMessageBox.information(self, '알림', result.fileName() + ' 저장 완료')
                 else:
-                    QMessageBox.information(self, '알림', '잘못된 파일입니다.')
+                    MyMessageBox.information(self, '알림', '잘못된 파일입니다.')
 

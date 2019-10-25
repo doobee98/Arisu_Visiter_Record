@@ -129,4 +129,9 @@ class DatabaseTableView(MyTableView):
             self.setRowOption(row_type, id_column, Option.Item.ReadOnly | MyItemView.Option.White)
         self.render()
 
+    def editItem(self, item: QTableWidgetItem) -> None:
+        super().editItem(item)
+        line_edit: ItemLineEdit = self.cellWidget(item.row(), item.column())
+        if DatabaseFieldViewConfig.getOption(self.fieldList()[item.column()], 'date_field') is True:
+            line_edit.setDateMask()
 

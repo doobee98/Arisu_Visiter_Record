@@ -1,10 +1,9 @@
-from Utility.Config.ConfigModule import *
+from Utility.Abstract.View.MyLineEdit import *
 from Utility.UI.BaseUI import *
-from Utility.CommandManager import *
-from typing import List
 
 
-class ItemLineEdit(QLineEdit):
+
+class ItemLineEdit(MyLineEdit):
     """
     ItemLineEdit
     기존에 사용되는 QTableWidgetItem에서의 LineEdit의 단점을 보완하기위해 만들어진 클래스
@@ -19,12 +18,8 @@ class ItemLineEdit(QLineEdit):
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.__auto_destroy = True
         self.__item = item
-        self.__completer_prefix_text: str = None
-
-        self.setText(self.__item.text())
-        self.selectAll()
-        self.setAlignment(Qt.AlignCenter)
         self.setFont(BaseUI.basicQFont())
+        self.setText(self.__item.text())
 
         completer = QCompleter()
         completer.popup().setFont(BaseUI.basicQFont(point_size=BaseUI.defaultPointSize()-1))
@@ -39,14 +34,13 @@ class ItemLineEdit(QLineEdit):
     def setCompleterList(self, completer_list: List[str]):
         list_model = QStringListModel(completer_list)
         self.completer().setModel(list_model)
-        self.completer().highlighted.connect(self.myFocusCompleter)
         self.completer().popup().setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.textEdited.connect(self.myTextEdited)
         
         # 너비 자동 조정
         popup = self.completer().popup()
         content_width = popup.sizeHintForColumn(0) + 2 * popup.frameWidth()
         popup.setFixedWidth(content_width)
+
 
     def focusInEvent(self, a0: QFocusEvent) -> None:
         super().focusInEvent(a0)
@@ -105,14 +99,6 @@ class ItemLineEdit(QLineEdit):
                 QApplication.postEvent(self, return_event)
                 QApplication.postEvent(self, back_tab_event)
                 return True
-            # elif event.key() in [Qt.Key_Return, Qt.Key_Enter] and event.spontaneous() is True:
-            #     tab_event = QKeyEvent(QEvent.KeyPress, Qt.Key_Tab, Qt.NoModifier)
-            #     next_row_event = QKeyEvent(QEvent.KeyPress, Qt.ALT + Qt.Key_Enter, Qt.NoModifier)
-            #     QApplication.postEvent(self, tab_event)
-            #     QApplication.postEvent(self, next_row_event)
-            #
-            # elif event.key() == Qt.ALT + Qt.Key_Enter and event.spontaneous() is False:
-            #     print('Alt Enter')
         return super().event(event)
 
     def autoDestroy(self) -> bool:
@@ -123,9 +109,11 @@ class ItemLineEdit(QLineEdit):
 
     @MyPyqtSlot(str)
     def myTextChanged(self, s: str):
+        cursor_pos = self.cursorPosition()
         self.blockSignals(True)
         self.__item.setText(s)
         self.blockSignals(False)
+        self.setCursorPosition(cursor_pos)
 
     @MyPyqtSlot(QTableWidgetItem)
     def myItemChanged(self, item: QTableWidgetItem):
@@ -134,22 +122,4 @@ class ItemLineEdit(QLineEdit):
             self.setText(item.text())
             self.blockSignals(False)
 
-    @MyPyqtSlot(str)
-    def myTextEdited(self, s: str):
-        self.__completer_prefix_text = s
-        #self.completer().setCompletionPrefix(s)
-        #print('prefix:', self.__completer_prefix_text)
-
-
-    @MyPyqtSlot(str)
-    def myFocusCompleter(self, text: str) -> None:
-        selected_indexes = self.completer().popup().selectedIndexes()
-        # todo 어떻게 selected text를 잡아낼지에 대해 고민을 좀 해봐야 할듯
-        # if len(selected_indexes) == 0:
-        #     print('nonselected', self.__completer_prefix_text)
-        # elif len(selected_indexes) == 1:
-        #     print('selected', self.__completer_prefix_text)
-        # else:
-        #     ErrorLogger.reportError('자동완성 기능에서 에러가 발생했습니다.\n'
-        #                             '두 개 이상의 목록이 선택되었습니다.', EOFError)
         

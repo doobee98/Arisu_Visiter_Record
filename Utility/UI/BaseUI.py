@@ -2,11 +2,12 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from Utility.Config.ConfigModule import *
+from Utility.Abstract.View.MyLineEdit import *
 from Utility.MyPyqtSlot import *
 from typing import Union
 
 
-class MyLineEdit(QLineEdit):
+class MyLineEdit2(MyLineEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -95,10 +96,10 @@ class BaseUI(QObject):
     @classmethod
     def basicQLineEdit(cls, *, font: QFont = None, text: str = None,
                        alignment: Union[Qt.Alignment, Qt.AlignmentFlag] = Qt.AlignCenter,
-                       parent: QWidget = None) -> QLineEdit:
+                       parent: QWidget = None) -> MyLineEdit:
         if font is None:
             font = cls.basicQFont()
-        le = MyLineEdit(parent)
+        le = MyLineEdit2(parent)
         le.setFont(font)
         le.setAlignment(alignment)
         if text is not None:
