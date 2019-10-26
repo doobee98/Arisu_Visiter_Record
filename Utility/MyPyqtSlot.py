@@ -12,6 +12,7 @@ def MyPyqtSlot(*args):
     def Slot(original_func: Callable[..., Optional[bool]]) -> Callable[..., Optional[bool]]:
         def wrapper(*inner_args, **inner_kargs) -> Optional[bool]:
             try:
+                #print(original_func.__name__, ' / ', *args, ' / ', *inner_args)
                 if len(inner_args) > len(args) + 1:  # because of self argument (1)
                     inner_args = inner_args[:len(args) + 1]
                 result = original_func(*inner_args, **inner_kargs)

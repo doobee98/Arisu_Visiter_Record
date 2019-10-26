@@ -1,7 +1,6 @@
 import os
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from Utility.Abstract.Model.MyModel import *
-from Utility.CryptListModule import *
 
 
 class AbstractOptionModelSignal(QObject):

@@ -1,4 +1,3 @@
-from Utility.CryptListModule import *
 from Model.Database.DatabaseModel import *
 from Model.Record.RecordTableModel import *
 from Excel.ExcelFileNameConfig import *

@@ -71,7 +71,7 @@ class Clock(QObject):
             cls.start()  # restart
             cls.getSignalSet().MinuteOut.emit()
         else:
-            ExecuteLogger.printLog('오차: ' + str(diff_time) + ' ms.')
+            # ExecuteLogger.printLog('오차: ' + str(diff_time) + ' ms.')
             cls._getTimer().setInterval(cls.MS.Minute)
             cls._getTimer().start()
             cls.getSignalSet().MinuteOut.emit()

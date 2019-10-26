@@ -1,6 +1,5 @@
 from PyQt5.QtCore import *
 from os.path import isfile
-from Utility.CryptListModule import *
 from Utility.Log.ErrorLogger import *
 from Utility.File.FilePathConfig import *
 from Utility.Abstract.Model.AbstractModel import *

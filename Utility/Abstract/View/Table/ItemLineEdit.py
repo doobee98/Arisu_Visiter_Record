@@ -45,7 +45,9 @@ class ItemLineEdit(MyLineEdit):
     def focusInEvent(self, a0: QFocusEvent) -> None:
         super().focusInEvent(a0)
         row, col = self.__item.row(), self.__item.column()
+        # self.__item.tableWidget().blockSignals(True)
         self.__item.tableWidget().setCurrentCell(row, col)
+        # self.__item.tableWidget().blockSignals(False)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """
