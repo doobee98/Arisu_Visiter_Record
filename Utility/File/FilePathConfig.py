@@ -32,6 +32,13 @@ class FilePathConfig:
         Config, FileType = ConfigModule.Config, ConfigModule.FileType
         return Config.FileDirectoryOption.fileDirectory(FileType.Report), '마감_' + location.replace(' ', '') + '_' + date + '.xlsx'
 
+    @classmethod
+    def getFilePathString(cls, directory: str, file_name: str) -> str:
+        if directory:
+            return directory + '\\' + file_name
+        else:
+            return file_name
+
     # @classmethod
     # def getExcelModuleDirectory(cls) -> str:
     #     Config, FileType = ConfigModule.Config, ConfigModule.FileType

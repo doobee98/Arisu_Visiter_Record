@@ -25,9 +25,9 @@ class MyLineEdit(QLineEdit):
 
     def focusInEvent(self, a0: QFocusEvent) -> None:
         super().focusInEvent(a0)
-        self.selectAll()
         if self.__input_mask and not self.inputMask():
             self.setInputMask(self.__input_mask)
+        self.selectAll()
 
     def focusOutEvent(self, a0: QFocusEvent) -> None:
         if not self.hasAcceptableInput():

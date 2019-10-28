@@ -34,7 +34,8 @@ class ClockView(QWidget):
     def updateClock(self) -> None:
         if self.time_lbl.text() == Clock.getTime().toString('hh : mm'):
             ErrorLogger.reportError(f'Minute is not updated now ({self.time_lbl.text()}).\n'
-                                    f'시계 초기화에 오류가 있습니다. 프로그램을 재시작 해 주세요.')
+                                    f'시계 초기화에 오류가 있습니다.'
+                                    f'정확한 시간을 나타내지 않는다면 프로그램을 재시작 해 주세요.')
             return
         self.date_lbl.setText(Clock.getDate().toString('yyyy년 MM월 dd일'))
         self.time_lbl.setText(Clock.getTime().toString('hh : mm'))

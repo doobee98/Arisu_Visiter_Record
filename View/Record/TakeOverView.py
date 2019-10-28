@@ -38,7 +38,7 @@ class TakeoverView(QWidget):
         #   line
         self.team_cb.setFont(BaseUI.basicQFont())
         self.team_cb.setEditable(True)
-        self.team_cb.lineEdit().setReadOnly(True)
+        #self.team_cb.lineEdit().setReadOnly(True)  # todo: 임시로
         self.team_cb.lineEdit().setAlignment(Qt.AlignCenter)
         for i in range(self.team_cb.count()):
             self.team_cb.setItemData(i, Qt.AlignCenter, Qt.TextAlignmentRole)

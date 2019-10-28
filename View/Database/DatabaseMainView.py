@@ -39,12 +39,15 @@ class DatabaseMainView(QWidget):
         hbox_middle.addWidget(self.filter)
         hbox_middle.addWidget(self.function_group)
 
+        hbox_bottom = QHBoxLayout()
+        hbox_bottom.addWidget(self.database_table)
+
         vbox = QVBoxLayout()
         vbox.addLayout(hbox_top)
         vbox.addStretch(1)
         vbox.addLayout(hbox_middle)
         vbox.addStretch(1)
-        vbox.addWidget(self.database_table)
+        vbox.addLayout(hbox_bottom)
 
         vbox.setAlignment(Qt.AlignCenter)
         self.setLayout(vbox)

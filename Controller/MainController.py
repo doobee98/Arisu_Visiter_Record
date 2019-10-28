@@ -89,7 +89,9 @@ class MainController(AbstractController):
         """
         Clock.start()  # todo 여기있어도 되나?
         location, today = Config.TotalOption.location(), Clock.getDate().toString('yyMMdd')
-        database_control, record_control = self.openDatabaseFile(location), self.openRecordFile(location, today)
+        directory, file_name = FilePathConfig.getRecordTablePath(location, today)
+        record_file_path = FilePathConfig.getFilePathString(directory, file_name)
+        database_control, record_control = self.openDatabaseFile(location), self.openRecordFile(record_file_path)
         if database_control is None or record_control is None:
             ErrorLogger.reportError('초기 로딩에 오류가 발생했습니다.', FileNotFoundError)
         self.setActiveDatabase(database_control)
@@ -122,7 +124,7 @@ class MainController(AbstractController):
         self.view().getSignalSet().OpenDatabaseRequest.connect(
             lambda loc: self.setActiveDatabase(self.openDatabaseFile(loc)))
         self.view().getSignalSet().OpenRecordRequest.connect(
-            lambda loc, date: self.setActiveRecord(self.openRecordFile(loc, date)))
+            lambda file_name: self.setActiveRecord(self.openRecordFile(file_name)))
         self.view().getSignalSet().CloseRecordFileRequest.connect(
             lambda idx: self.removeRecordController(self.__record_control_list[idx-len(self.__database_control_list)]))
         self.view().getSignalSet().ChangeRecordTabSignal.connect(
@@ -230,8 +232,16 @@ class MainController(AbstractController):
     def closeDatabase(self) -> None:
         pass
 
-    def openRecordFile(self, location_string: str, date_string: str) -> Optional[RecordMainController]:
-        table_model = RecordTableModel(location_string, date_string)
+    def openRecordFile(self, record_file_name: str) -> Optional[RecordMainController]:
+        extension = '.rcd'
+        directory, file_name = '\\'.join(record_file_name.split('/')[:-1]), record_file_name.split('/').pop(-1)
+        file_name_split = file_name.split('_')
+        location_string = file_name_split[0] + ' ' + file_name_split[1]
+        date_string = file_name_split[3].replace(extension, '')
+
+        table_model = RecordTableModel(location_string, date_string, load=False)
+        table_model.setDirectory(directory)
+        table_model.load()
         view = RecordMainView(table_model)
         new_record_control = RecordMainController(table_model, view)
         if self.addRecordController(new_record_control) is True:

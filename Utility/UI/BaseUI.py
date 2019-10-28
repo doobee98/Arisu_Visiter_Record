@@ -7,12 +7,13 @@ from Utility.MyPyqtSlot import *
 from typing import Union
 
 
-class MyLineEdit2(MyLineEdit):
+class _MyLineEdit(MyLineEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if not self.hasSelectedText():
+            super().mousePressEvent(event)
             self.selectAll()
         else:
             super().mousePressEvent(event)
@@ -99,7 +100,7 @@ class BaseUI(QObject):
                        parent: QWidget = None) -> MyLineEdit:
         if font is None:
             font = cls.basicQFont()
-        le = MyLineEdit2(parent)
+        le = _MyLineEdit(parent)
         le.setFont(font)
         le.setAlignment(alignment)
         if text is not None:

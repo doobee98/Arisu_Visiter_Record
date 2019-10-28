@@ -6,7 +6,7 @@ from Utility.StatusBarManager import *
 
 
 class MainViewSignal(QObject):
-    OpenRecordRequest = pyqtSignal(str, str)
+    OpenRecordRequest = pyqtSignal(str)
     OpenDatabaseRequest = pyqtSignal(str)
     CloseRecordFileRequest = pyqtSignal(int)
     ChangeRecordTabSignal = pyqtSignal(int)
@@ -137,7 +137,9 @@ class MainView(QMainWindow, ShowingView):
             return
 
     def createTodayRecord(self) -> None:
-        self.getSignalSet().OpenRecordRequest.emit(Config.TotalOption.location(), Clock.getDate().toString('yyMMdd'))
+        directory, file_name = FilePathConfig.getRecordTablePath(Config.TotalOption.location(), Clock.getDate().toString('yyMMdd'))
+        record_file_path = FilePathConfig.getFilePathString(directory, file_name)
+        self.getSignalSet().OpenRecordRequest.emit(record_file_path)
 
     def openDatabaseView(self) -> None:
         pass
@@ -155,16 +157,16 @@ class MainView(QMainWindow, ShowingView):
         extension = '.rcd'
         file_name = QFileDialog.getOpenFileName(self, '파일 열기', './', '*' + extension)
         if file_name[0]:
-            """
-            1. 마지막 슬래시(/) 이후의 문자열을 파일 이름으로 -> {head}_{tail}_기록부_{date}.rcd
-            2. 언더바(_) 기준으로 split 한 뒤 location과 record_date에 입력함
-            """
-            directory, file_name = '\\'.join(file_name[0].split('/')[:-1]), file_name[0].split('/').pop(-1)
-            file_name_split = file_name.split('_')
-            location = file_name_split[0] + ' ' + file_name_split[1]
-            record_date = file_name_split[3].replace(extension, '')
+            # """
+            # 1. 마지막 슬래시(/) 이후의 문자열을 파일 이름으로 -> {head}_{tail}_기록부_{date}.rcd
+            # 2. 언더바(_) 기준으로 split 한 뒤 location과 record_date에 입력함
+            # """
+            # directory, file_name = '\\'.join(file_name[0].split('/')[:-1]), file_name[0].split('/').pop(-1)
+            # file_name_split = file_name.split('_')
+            # location = file_name_split[0] + ' ' + file_name_split[1]
+            # record_date = file_name_split[3].replace(extension, '')
 
-            self.getSignalSet().OpenRecordRequest.emit(location, record_date)
+            self.getSignalSet().OpenRecordRequest.emit(file_name[0])
             #self.tabWidget().setCurrentIndex(self.tabWidget().count() - 1)
         else:
             ErrorLogger.reportError('File Open Error')
