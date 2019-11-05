@@ -1,7 +1,6 @@
-from Utility.Abstract.View.ShowingView import *
 from Utility.UI.BaseUI import *
 from Model.Delivery.DeliveryModel import *
-from Utility.ShortCutManager import *
+from Utility.Manager.ShortCutManager import *
 
 
 class DeliveryDialogSignal(QObject):

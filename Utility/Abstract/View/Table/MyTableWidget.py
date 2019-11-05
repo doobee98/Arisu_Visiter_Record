@@ -1,6 +1,5 @@
 from Utility.Abstract.View.Table.ItemLineEdit import *
-from Utility.Abstract.View.MyMessageBox import *
-from Utility.ShortCutManager import *
+from Utility.Manager.ShortCutManager import *
 
 
 class MyTableWidgetSignal(QObject):

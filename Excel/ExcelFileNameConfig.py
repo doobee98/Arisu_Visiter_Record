@@ -1,16 +1,14 @@
+from Utility.File.BasicFileTable import *
+
 
 class ExcelFileNameConfig:
-    @classmethod
-    def getExcelDatabaseName(cls) -> str:
-        return '출입자DB.xlsm'
-
     @classmethod
     def getExcelDatabaseSheetName(cls) -> str:
         return 'Sheet1'
 
     @classmethod
     def getExcelReportSampleName(cls) -> str:
-        return 'ProgramFiles/ReportSample.xlsx'
+        return BasicFileTable.ReportSample
 
     @classmethod
     def __removeSpace(cls, string: str) -> str:

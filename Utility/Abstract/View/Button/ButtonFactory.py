@@ -1,5 +1,5 @@
 from typing import Callable
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from Utility.UI.BaseUI import *
 
 

@@ -1,5 +1,5 @@
 from Utility.UI.BaseUI import *
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 
 
 class CurWorkerView(QWidget):

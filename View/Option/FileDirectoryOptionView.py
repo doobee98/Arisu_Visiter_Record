@@ -1,4 +1,4 @@
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from Utility.UI.BaseUI import *
 from View.Option.AbstractOptionView import *
 from Utility.Abstract.View.MyMessageBox import *
@@ -25,7 +25,7 @@ class FileDirectoryOptionView(AbstractOptionView):
                 self.__field_widget_dict[field_iter] = cbox
             else:  # isinstance(self.getModel().getOption(field), int)
                 directory_lbl = BaseUI.basicQLabel(text=str(option_iter), alignment=Qt.AlignLeft)
-                directory_lbl.setFixedWidth(200)  # todo 왜 minimum가 안될까
+                directory_lbl.setFixedWidth(400)  # todo 왜 minimum가 안될까
                 gbox.addWidget(directory_lbl, row_iter, 1)
 
                 directory_button = BaseUI.basicQPushButton(text='...')

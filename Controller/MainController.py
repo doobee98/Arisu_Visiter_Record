@@ -1,9 +1,7 @@
-from Controller.Record.RecordMainController import *
-from Controller.Database.DatabaseMainController import *
 from Controller.DB_Record_HubController import *
 from Utility.File.LocationSettingDialog import *
 from View.MainView import *
-from Utility.ShortCutManager import *
+from Utility.Manager.ShortCutManager import *
 
 
 class _ActiveControllerSet:
@@ -232,9 +230,10 @@ class MainController(AbstractController):
     def closeDatabase(self) -> None:
         pass
 
-    def openRecordFile(self, record_file_name: str) -> Optional[RecordMainController]:
+    def openRecordFile(self, record_file_path: str) -> Optional[RecordMainController]:
         extension = '.rcd'
-        directory, file_name = '\\'.join(record_file_name.split('/')[:-1]), record_file_name.split('/').pop(-1)
+        record_file_path = record_file_path.replace('/', '\\')
+        directory, file_name = '\\'.join(record_file_path.split('\\')[:-1]), record_file_path.split('\\').pop(-1)
         file_name_split = file_name.split('_')
         location_string = file_name_split[0] + ' ' + file_name_split[1]
         date_string = file_name_split[3].replace(extension, '')

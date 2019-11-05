@@ -159,7 +159,7 @@ class ExcelFileModule:
         return db_model
 
     @classmethod
-    def exportExcelRecord(cls, location_string: str, date_string: str) -> str:
+    def exportExcelRecord(cls, record_file_path: str) -> str:
         """
         인자로 받은 정보에 해당하는 RecordTableModel을 엑셀 마감 파일로 바꿈.
         반환하는 값은 생성한 마감 파일의 이름
@@ -168,7 +168,19 @@ class ExcelFileModule:
             3. report 파일을 생성하고 그 이름을 반환
         """
         print('ExcelModule setting')
-        record_table_model = RecordTableModel(location_string, date_string)   # todo: has file 체크하기
+        extension = '.rcd'
+        print(record_file_path)
+        record_file_path = record_file_path.replace('/', '\\')
+        directory, file_name = '\\'.join(record_file_path.split('\\')[:-1]), record_file_path.split('\\').pop(-1)
+        file_name_split = file_name.split('_')
+        location_string = file_name_split[0] + ' ' + file_name_split[1]
+        date_string = file_name_split[3].replace(extension, '')
+        print(location_string, date_string)
+
+        record_table_model = RecordTableModel(location_string, date_string, load=False)
+        record_table_model.setDirectory(directory)
+        record_table_model.load()
+
         info = ExcelReportInfo
         wb = load_workbook(ExcelFileNameConfig.getExcelReportSampleName())
         sheet = wb['date']
@@ -236,13 +248,13 @@ class ExcelFileModule:
             row_iter += 1
 
         print('Finish writing')
-        directory, file_name = FilePathConfig.getReportPath(location_string, date_string)
-        if directory:
-            file_path = directory + '\\' + file_name
+        report_directory, report_file_name = FilePathConfig.getReportPath(location_string, date_string)
+        if report_directory:
+            report_file_path = report_directory + '\\' + report_file_name
         else:
-            file_path = file_name
-        wb.save(file_path)
+            report_file_path = report_file_name
+        wb.save(report_file_path)
         wb.close()
-        print(file_path, 'saved')
+        print(report_file_path, 'saved')
         return file_name
 

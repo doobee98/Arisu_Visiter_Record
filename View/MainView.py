@@ -1,8 +1,7 @@
 from View.Record.RecordMainView import *
 from View.Database.DatabaseMainView import DatabaseMainView
 from View.Option.OptionDialog import *
-from Utility.Abstract.View.ShowingView import *
-from Utility.StatusBarManager import *
+from Utility.Manager.StatusBarManager import *
 
 
 class MainViewSignal(QObject):
@@ -45,17 +44,8 @@ class MainView(QMainWindow, ShowingView):
         create_record_action.triggered.connect(lambda: self.createTodayRecord())
         open_record_action = QAction('기록부 파일 열기', self)
         open_record_action.triggered.connect(lambda: self.openRecordView())
-        change_database_action = QAction('데이터베이스 파일 변경하기(개발중)', self)
-        change_database_action.triggered.connect(lambda: self.openDatabaseView())
-        change_database_action.setEnabled(False)
         file_menu.addAction(create_record_action)
         file_menu.addAction(open_record_action)
-        file_menu.addAction(change_database_action)
-        
-        # # todo 테스트 - 날짜 지난거 테스트
-        # test_action = QAction('테스트 - dayout', self)
-        # test_action.triggered.connect(lambda: self.dayoutDialogExec())
-        # file_menu.addAction(test_action)
 
         #   편집 메뉴
         edit_menu = menubar.addMenu('편집')
@@ -80,12 +70,14 @@ class MainView(QMainWindow, ShowingView):
 
         # 메인화면 레이아웃
         self.setCentralWidget(self.__tab_widget)
-        self.setWindowTitle('아리수 정수센터 관리 시스템')
+        self.setWindowTitle('아리수 출입자기록부 프로그램')
+        self.setWindowIcon(QIcon(BasicFileTable.Icon))
 
         # 시계 날짜 지나는 것과 연결하기
         Clock.getSignalSet().DayOut.connect(lambda: self.dayoutDialogExec())
 
         self.setFont(BaseUI.basicQFont())
+        self.setAcceptDrops(True)
 
         x, y = Config.HiddenOption.windowGeometry()
         self.move(x, y)
@@ -141,35 +133,14 @@ class MainView(QMainWindow, ShowingView):
         record_file_path = FilePathConfig.getFilePathString(directory, file_name)
         self.getSignalSet().OpenRecordRequest.emit(record_file_path)
 
-    def openDatabaseView(self) -> None:
-        pass
-        # file_name = QFileDialog.getOpenFileName(self, '파일 열기', './', '*.iml')  # , '*.iml'
-        # if file_name[0]:
-        #     file_pos = file_name[0].find('암사')  # todo: 파일 모듈로 옮길것, 수정해야함
-        #     database_location = file_name[0][file_pos:file_pos+4]
-        #     database_location = database_location[0:2] + ' ' + database_location[2:4]
-        #     self.getSignalSet().OpenDatabaseRequest.emit(database_location)
-        #     #self.tabWidget().setCurrentIndex(0)
-        # else:
-        #     ErrorLogger.reportError('File Open Error')
-
     def openRecordView(self) -> None:
         extension = '.rcd'
         file_name = QFileDialog.getOpenFileName(self, '파일 열기', './', '*' + extension)
         if file_name[0]:
-            # """
-            # 1. 마지막 슬래시(/) 이후의 문자열을 파일 이름으로 -> {head}_{tail}_기록부_{date}.rcd
-            # 2. 언더바(_) 기준으로 split 한 뒤 location과 record_date에 입력함
-            # """
-            # directory, file_name = '\\'.join(file_name[0].split('/')[:-1]), file_name[0].split('/').pop(-1)
-            # file_name_split = file_name.split('_')
-            # location = file_name_split[0] + ' ' + file_name_split[1]
-            # record_date = file_name_split[3].replace(extension, '')
-
             self.getSignalSet().OpenRecordRequest.emit(file_name[0])
             #self.tabWidget().setCurrentIndex(self.tabWidget().count() - 1)
         else:
-            ErrorLogger.reportError('File Open Error')
+            pass  # todo 맞나?
 
     def addDatabaseTab(self, database_view: DatabaseMainView) -> None:
         ExecuteLogger.printLog('addDB')
@@ -206,10 +177,27 @@ class MainView(QMainWindow, ShowingView):
     """
     event
     * closeEvent
+    * dragEnterEvent, dropEvent
     """
     def closeEvent(self, a0: QCloseEvent) -> None:
         Config.HiddenOption.setWindowGeometry((self.pos().x(), self.pos().y()))
         super().closeEvent(a0)
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if event.mimeData().hasUrls():
+            urls: List[QUrl] = event.mimeData().urls()
+            for url_iter in urls:
+                file_path = url_iter.path()
+                if not (len(file_path) > 4 and file_path[-4:] == '.rcd'):
+                    return
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        if event.mimeData().hasUrls():
+            urls: List[QUrl] = event.mimeData().urls()
+            for url_iter in urls:
+                file_path = url_iter.path()[1:].replace('/', '\\')
+                self.getSignalSet().OpenRecordRequest.emit(file_path)
 
     """
     slot

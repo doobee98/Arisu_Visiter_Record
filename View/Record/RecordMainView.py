@@ -11,10 +11,9 @@ from View.Record.RecordTable.RecordTableView import *
 from View.Record.RemainNumberBoxView import *
 
 from Utility.Abstract.View.Table.Search.TableSearchDialog import *
-from Utility.DeliveryDialog import *
-from Utility.ShortCutManager import *
-from Utility.Abstract.View.MyMessageBox import *
-from Utility.CommandManager import *
+from View.Record.DeliveryDialog import *
+from Utility.Manager.ShortCutManager import *
+from Utility.Manager.CommandManager import *
 import subprocess
 
 
@@ -139,15 +138,12 @@ class RecordMainView(QWidget):
     @MyPyqtSlot()
     def reportExcel(self) -> None:
         try:
-            with open('Excel/execute_properties.txt', 'wb') as f:
-                f.write((self.__tableModel().getLocation() + '\n').encode())
-                f.write((self.__tableModel().getRecordDate() + '\n').encode())
             StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
-            subprocess.call('.\\\\Excel\\\\ExportExcelRecord.exe')
+            subprocess.run([BasicFileTable.ExportEXE, self.__tableModel().filePath()], check=True)
             MyMessageBox.information(self, '알림', '마감 파일이 생성되었습니다.')
         except Exception as e:
             ErrorLogger.reportError('마감 파일 생성중 오류가 발생했습니다.\n'
-                                    'Excel 폴더에 ExportExcelRecord.exe 파일이 존재하는지 확인해 주세요.')
+                                    f'{BasicFileTable.ExportEXE} 파일이 존재하는지 확인해 주세요.')
         StatusBarManager.setIdleStatus()
         if not Config.RecordOption.autoUpdateDB():
             self.getSignalSet().UpdateDatabaseRequest.emit()

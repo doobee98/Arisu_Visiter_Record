@@ -8,29 +8,26 @@ class FileType:
     Database = 'database'
     Config = 'config'
     Report = 'report'
-    Log = 'log'
     Delivery = 'delivery'
 
 
 class FileDirectoryOptionModel(AbstractOptionModel):
     def __init__(self):
-        directory, file_name = FilePathConfig.getConfigPath('FilePathConfig')
+        directory, file_name = FilePathConfig.getConfigPath('FileDirectoryConfig')
         self.__printed_dict = {
             FileType.Record: '기록부',
             FileType.Database: '데이터베이스',
             FileType.Report: '마감 파일',
-            FileType.Log: '로그',  # todo 로그, 마감파일, 전달사항은 현재 적용 안되어있음
             FileType.Delivery: '전달사항'
         }
         field_list = list(self.__printed_dict.keys())
         super().__init__(file_name, field_list)
         self.setDirectory(directory)
         default_dict = {
-            FileType.Record: '',
-            FileType.Database: '',
-            FileType.Report: '',
-            FileType.Log: '',
-            FileType.Delivery: ''
+            FileType.Record: BasicFileTable.Record,
+            FileType.Database: BasicFileTable.Database,
+            FileType.Report: BasicFileTable.Report,
+            FileType.Delivery: BasicFileTable.Delivery
         }
         self._setDefaultOptions(MyModel(default_dict))
         self._setCloseFieldList([FileType.Record, FileType.Database])

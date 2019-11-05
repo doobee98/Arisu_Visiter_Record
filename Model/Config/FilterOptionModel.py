@@ -1,5 +1,6 @@
 from Model.Config.AbstractOptionModel import *
 from Utility.Config.RecordFieldViewConfig import *
+from Utility.File.FilePathConfig import *
 
 
 class FilterOptionModel(AbstractOptionModel):

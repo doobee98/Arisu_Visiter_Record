@@ -1,4 +1,4 @@
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *

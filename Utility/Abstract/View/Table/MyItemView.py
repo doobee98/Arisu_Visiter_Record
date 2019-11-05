@@ -1,5 +1,5 @@
 from Utility.Abstract.View.Button.ButtonFactory import *
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from typing import Optional
 
 

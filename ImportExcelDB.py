@@ -1,3 +1,4 @@
+import InitializeArisuRecord
 from Excel.ImportExcelDBView import *
 import traceback
 

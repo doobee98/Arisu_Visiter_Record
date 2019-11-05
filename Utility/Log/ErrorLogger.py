@@ -2,13 +2,12 @@ import inspect, sys, traceback
 from datetime import datetime
 from PyQt5.QtWidgets import QApplication
 from Utility.Abstract.View.MyMessageBox import *
-from Utility.File.FilePathConfig import *
+from Utility.File.BasicFileTable import *
 
 
-# 에러 로거에서 에러가 발생할 경우를 처리하여야함
 # try except
 class ErrorLogger:
-    __FileName = 'ErrorReport'
+    __FileName = 'ErrorReport.txt'
 
     @classmethod
     def reportError(cls, what: str = None, exception: Exception = None):
@@ -44,7 +43,7 @@ class ErrorLogger:
     @classmethod
     def __writeReportFile(cls, error_string: str):
         error_string += '\n\n'
-        directory, file_name = FilePathConfig.getLogPath(cls.__FileName)
+        directory, file_name = BasicFileTable.Log, cls.__FileName
         file_path = (directory + '\\' + file_name) if directory != '' else file_name
         with open(file_path, 'a', encoding='utf-8') as f:
             f.write(error_string)

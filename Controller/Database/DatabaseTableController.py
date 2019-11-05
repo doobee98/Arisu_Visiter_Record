@@ -1,6 +1,8 @@
 from View.Database.DatabaseTable.DatabaseTableView import *
-
+from Utility.Manager.CommandManager import *
 from Controller.AbstractController import *
+from Model.Command.ConcreteCommand.Model import Model
+from Model.Command.ConcreteCommand.View import View
 
 
 class DatabaseTableController(AbstractController):

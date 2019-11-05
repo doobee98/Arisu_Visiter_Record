@@ -1,4 +1,4 @@
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from Utility.UI.BaseUI import *
 from View.Option.AbstractOptionView import *
 

@@ -1,14 +1,14 @@
+import InitializeArisuRecord
 from Utility.UI.BaseUI import *
 from Excel.ExcelFileModule import *
-import traceback
+import traceback, sys
 
 if __name__ == '__main__':
     print('Execute')
     try:
-        with __builtins__.open('Excel\\execute_properties.txt', 'rb') as f:
-            location = f.readline().decode().replace('\n', '')
-            record_date = f.readline().decode().replace('\n', '')
-        ExcelFileModule.exportExcelRecord(location, record_date)
+        print(sys.argv)
+        record_file_path = sys.argv[1]
+        ExcelFileModule.exportExcelRecord(record_file_path)
     except Exception as e:
         print(traceback.format_exc())
         os.system("PAUSE")

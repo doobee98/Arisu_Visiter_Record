@@ -1,6 +1,5 @@
 from abc import *
-from PyQt5.QtCore import QObject
-from Utility.StatusBarManager import *
+from Utility.Manager.StatusBarManager import *
 
 
 # todo errorlogger에 넣을까?

@@ -1,7 +1,7 @@
 from Utility.Abstract.View.Table.MyTableView import *
 from Utility.Config.RecordFieldViewConfig import *
 from Utility.Config.DatabaseFieldViewConfig import *
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 
 class CompleterListModule:
     _INSTANCE = None

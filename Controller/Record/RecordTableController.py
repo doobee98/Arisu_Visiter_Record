@@ -1,6 +1,6 @@
 from View.Record.RecordTable.RecordTableView import *
 
-from Utility.CommandManager import *
+from Utility.Manager.CommandManager import *
 from Model.Command.ConcreteCommand.Model import Model
 from Model.Command.ConcreteCommand.View import View
 from Controller.AbstractController import *

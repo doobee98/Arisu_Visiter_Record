@@ -2,7 +2,7 @@ from Utility.Abstract.Model.MyTableModel import *
 from Model.Database.VisitorModel import *
 from Utility.Config.DatabaseFieldModelConfig import *
 from Utility.Clock import *
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from Utility.Abstract.View.MyMessageBox import *
 
 

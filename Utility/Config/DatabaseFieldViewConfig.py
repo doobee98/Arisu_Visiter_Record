@@ -1,4 +1,4 @@
-from Utility.Config.ConfigModule import *
+from Utility.Config.ConfigSet import *
 from Utility.Config.AbstractFieldConfig import *
 
 class DatabaseFieldViewConfig(AbstractFieldConfig):

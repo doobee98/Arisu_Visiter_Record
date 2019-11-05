@@ -5,8 +5,8 @@ from View.Database.DatabaseButtonView import *
 from View.Database.FunctionGroupView import *
 from Utility.ClockView import *
 from Utility.Abstract.View.Table.Search.TableSearchDialog import *
-from Utility.ShortCutManager import *
-from Utility.CommandManager import *
+from Utility.Manager.ShortCutManager import *
+from Utility.Manager.CommandManager import *
 
 
 class DatabaseMainView(QWidget):
