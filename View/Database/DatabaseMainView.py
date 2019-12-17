@@ -1,71 +1,107 @@
-from View.Database.DatabaseTable.DatabaseTableView import *
-from View.Database.DatabaseTitleView import *
-from View.Database.DatabaseFilterView import *
-from View.Database.DatabaseButtonView import *
-from View.Database.FunctionGroupView import *
-from Utility.ClockView import *
-from Utility.Abstract.View.Table.Search.TableSearchDialog import *
+from View.Table.DatabaseTableView import *
+from View.Database.TitleView import *
+from View.Database.FunctionView import *
+from View.Database.AddGroupView import *
+from View.Database.SortInformationView import *
 from Utility.Manager.ShortCutManager import *
 from Utility.Manager.CommandManager import *
 
+"""
+DatabaseMainView
+* 타이틀 (제목, 장소, 시계)
+* 데이터베이스 테이블
+* 아이템 추가 테이블
+* 정렬 정보
+* 기능 박스
+"""
 
-class DatabaseMainView(QWidget):
-    def __init__(self, table_model: DatabaseModel):
-        super().__init__()
 
-        self.database_table = DatabaseTableView(table_model)
-        self.title = DatabaseTitleView(table_model.getLocation())
-        self.clock = ClockView()
-        self.filter = DatabaseFilterView()
-        self.button = DatabaseButtonView()
-        self.function_group = FunctionGroupView()
-        self.search_dialog = TableSearchDialog(self.database_table)
+class DatabaseMainViewSignal(QObject):
+    FunctionView_SearchButtonClicked = pyqtSignal()
+    FunctionView_OptionButtonClicked = pyqtSignal()
+    AddGroupView_AddButtonClicked = pyqtSignal()
 
-        self.function_group.setSearchSlot(self.searchDialogExec)
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_F,
-                                    self.function_group.button(ButtonFactory.ButtonType.Search).click)
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_X, lambda: self.database_table.cutSelectedItems())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_C, lambda: self.database_table.copySelectedItems())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_V, lambda: self.database_table.pasteSelectedItems())
-        # todo 임시 테스트
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
 
-        hbox_top = QHBoxLayout()
-        hbox_top.addWidget(self.title, 4)
-        hbox_top.addWidget(self.clock, 1)
 
-        hbox_middle = QHBoxLayout()
-        hbox_middle.addWidget(self.filter)
-        hbox_middle.addWidget(self.function_group)
+class DatabaseMainView(QWidget, ShowingView):
+    def __init__(self, table_view: DatabaseTableView, parent: QWidget = None):
+        super().__init__(parent)
+        self.__signal_set = DatabaseMainViewSignal(self)
+        self.__database_table_view = table_view
+        self.__title_view = TitleView(self)
+        self.__function_view = FunctionView(self)
+        self.__add_group_view = AddGroupView(self)
+        self.__sort_info_view = SortInformationView(self)
 
-        hbox_bottom = QHBoxLayout()
-        hbox_bottom.addWidget(self.database_table)
+        self.__function_view.signalSet().SearchButtonClicked.connect(lambda: self.signalSet().FunctionView_SearchButtonClicked.emit())
+        self.__add_group_view.signalSet().AddButtonClicked.connect(lambda: self.signalSet().AddGroupView_AddButtonClicked.emit())
 
+        if ConfigModule.Application.enableShortCut():
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_F, lambda: self.functionView().signalSet().SearchButtonClicked.emit())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_X, lambda: self.databaseTableView().cutSelectedItems())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_C, lambda: self.databaseTableView().copySelectedItems())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_V, lambda: self.databaseTableView().pasteSelectedItems())
+
+        # 레이아웃 구성
+        middle_hbox = QHBoxLayout()
+        middle_hbox.addWidget(self.__sort_info_view)
+        middle_hbox.addWidget(self.__add_group_view)
+        middle_hbox.addWidget(self.__function_view)
+
+        # 전체 레이아웃 구성
         vbox = QVBoxLayout()
-        vbox.addLayout(hbox_top)
+        vbox.addWidget(self.__title_view)
         vbox.addStretch(1)
-        vbox.addLayout(hbox_middle)
+        vbox.addLayout(middle_hbox)
         vbox.addStretch(1)
-        vbox.addLayout(hbox_bottom)
-
-        vbox.setAlignment(Qt.AlignCenter)
+        vbox.addWidget(self.__database_table_view)
         self.setLayout(vbox)
+        self.setFont(MyDefaultWidgets.basicQFont())
+        self.__add_group_view.setFont(MyDefaultWidgets.basicQFont())
+        # self.__function_view.setFont()
 
-    def __str__(self):
-        return 'DatabaseMainView'
+    """
+    property
+    * signalSet
+    * location
+    * databaseTableView
+    * titleView, functionView, addGroupView, sortInformationView
+    """
+    def signalSet(self) -> DatabaseMainViewSignal:
+        return self.__signal_set
 
-    @MyPyqtSlot()
-    def render(self):
-        self.database_table.render()
+    def location(self) -> str:
+        return self.__tableModel().location() if self.__tableModel() else None
 
-    def activeView(self) -> QWidget:
-        if self.search_dialog.isVisible():
-            return self.search_dialog
-        else:
-            return self
+    def databaseTableView(self) -> DatabaseTableView:
+        return self.__database_table_view
 
-    @MyPyqtSlot()
-    def searchDialogExec(self) -> None:
-        self.search_dialog.exec_()
+    def titleView(self) -> TitleView:
+        return self.__title_view
 
+    def functionView(self) -> FunctionView:
+        return self.__function_view
+
+    def addGroupView(self) -> AddGroupView:
+        return self.__add_group_view
+
+    def sortInformationView(self) -> SortInformationView:
+        return self.__sort_info_view
+
+    """
+    advanced property
+    * __tableModel
+    """
+    def __tableModel(self) -> DatabaseTableModel:
+        return self.databaseTableView().myModel()
+
+    """
+    override
+    * activeView
+    """
+    def activeView(self) -> 'ShowingView':
+        return self

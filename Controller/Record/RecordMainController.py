@@ -1,175 +1,250 @@
 from View.Record.RecordMainView import *
 from Controller.Record.RecordTableController import *
-from Utility.Abstract.View.MyMessageBox import *
-from Controller.AbstractController import *
+from View.Dialog.DeliveryDialog import *
+from View.Dialog.SearchDialog import *
+import subprocess
+
+"""
+RecordMainController
+"""
 
 
 class RecordMainControllerSignal(QObject):
-    WriteDatabaseRequest = pyqtSignal(list)
-
-    def __init__(self, parent=None):
+    RecordTableController_FindDatabaseRequest = pyqtSignal(dict)
+    RecordTableController_UpdateDatabaseRequest = pyqtSignal(list)
+    def __init__(self, parent: QObject = None):
         super().__init__(parent)
 
 
-class RecordMainController(AbstractController):
-    def __init__(self, table_model: RecordTableModel, view: RecordMainView):
-        super().__init__()
+class RecordMainController(QObject):
+    def __init__(self, view: RecordMainView, parent: QObject = None):
+        super().__init__(parent)
         self.__signal_set = RecordMainControllerSignal(self)
-        self.__connect_list: List[Tuple[pyqtSignal, Callable]] = []
-        self.__model = None
         self.__view = view
-        self.control_table = RecordTableController(table_model, self.view().record_table)
+        self.__table_controller = RecordTableController(view.recordTableView(), self)
+        self.__delivery_dialog = DeliveryDialog(DeliveryModel(self.__view.location()))
+        self.__search_dialog = SearchDialog(self.tableController().view())
 
-        self.__search_row_match_list: List[int] = []
+        # controller signal
+        self.tableController().signalSet().FindDatabaseRequest.connect(lambda dic: self.signalSet().RecordTableController_FindDatabaseRequest.emit(dic))
+
+        # tableModel signal
+        self.tableController().model().signalSet().ItemChanged.connect(lambda: self.modelCountChanged())
+        self.tableController().model().signalSet().ItemRemoved.connect(lambda: self.modelCountChanged())
+        self.tableController().model().signalSet().ItemInserted.connect(lambda: self.modelCountChanged())
+
+        # tableView signal
+        self.view().signalSet().MatchTableView_RowDoubleClicked.connect(CommandSlot(self.rowDoubleClicked))  # todo Exec이 아닌 End로 해도 괜찮을까
+        self.view().signalSet().ArriveView_ArriveButtonClicked.connect(CommandSlot(self.arriveButtonClicked))
+        self.view().signalSet().LeaveView_LeaveButtonClicked.connect(CommandSlot(self.leaveButtonClicked))
+        self.view().signalSet().ScrollView_ScrollButtonClicked.connect(CommandSlot(self.scrollButtonClicked, end_command=ExecCommand()))
+        self.view().signalSet().TakeoverView_TakeoverButtonClicked.connect(CommandSlot(self.takeoverButtonClicked))
+        self.view().signalSet().TakeoverView_DeliveryButtonClicked.connect(lambda: self.__delivery_dialog.exec_())
+        self.view().signalSet().FunctionView_SearchButtonClicked.connect(lambda: self.__search_dialog.exec_())  # todo
+        self.view().signalSet().FunctionView_ReportButtonClicked.connect(lambda: self.reportButtonClicked())   # todo
+
+        self.__search_dialog.signalSet().SearchButtonClicked.connect(self.startSearch)
+        self.__search_dialog.signalSet().BeforeButtonClicked.connect(self.beforeSearch)
+        self.__search_dialog.signalSet().NextButtonClicked.connect(self.nextSearch)
+        self.__search_dialog.signalSet().FinishButtonClicked.connect(self.finishSearch)
+
+        self.tableController().start()
 
     """
     property
     * signalSet
-    * model (override)
-    * view (override)
-    * recordDate
-    * location
+    * view
+    * tableController
+    * deliveryDialog, searchDialog
     """
-    def getSignalSet(self) -> RecordMainControllerSignal:
+    def signalSet(self) -> RecordMainControllerSignal:
         return self.__signal_set
-
-    def model(self) -> None:
-        return None
 
     def view(self) -> RecordMainView:
         return self.__view
 
-    def recordDate(self) -> str:
-        return self.getRecordTableController().model().getRecordDate()
+    def tableController(self) -> RecordTableController:
+        return self.__table_controller
 
-    def location(self) -> str:
-        return self.getRecordTableController().model().getLocation()
+    def deliveryDialog(self) -> DeliveryDialog:
+        return self.__delivery_dialog
 
-    def getRecordTableController(self) -> RecordTableController:
-        return self.control_table
-
-    def __getSearchRowList(self) -> List[int]:
-        return self.__search_row_match_list.copy()
-
-    def __setSearchRowList(self, row_list: List[int]) -> None:
-        self.__search_row_match_list = row_list
+    def searchDialog(self) -> SearchDialog:
+        return self.__search_dialog
 
     """
     method
-    * Run, Stop  (override)
+    * start, stop
     """
-    def Run(self):
-        self._connectSignal(self.control_table.model().getSignalSet().TableModelUpdated, self.tableModelUpdated)
-        self._connectSignal(self.view().scroll_btn.getSignalSet().ScrollBtnClicked,
-                            CommandSlot(self.scrollNextRequest, end_command=ExecCommand()))
-        # 나가기가 실패했을 경우 EndCommand하지 않기 위해서 함수 내에서 직접 EndCommand를 처리함, 단 외부에서 호출하면 안됨.
-        self._connectSignal(self.view().leave.getSignalSet().LeaveBtnClicked,
-                            CommandSlot(self.leaveRecordRequest, end_command=None))
-        self._connectSignal(self.view().arrive_btn.getSignalSet().ArriveBtnClicked, CommandSlot(self.arriveRequest))
-        self._connectSignal(self.view().take_over.getSignalSet().TakeoverBtnClicked, CommandSlot(self.takeoverRequest))
-        self._connectSignal(self.view().search_table.getSignalSet().WriteVisitorRequest,
-                            CommandSlot(self.writeDataToRecordTableRequest, end_command=ExecCommand()))
-        self._connectSignal(self.view().getSignalSet().UpdateDatabaseRequest, self.updateDatabase)
-        self._connectSignal(self.view().search_dialog.getSignalSet().SearchTableRequest, self.searchRecordViewRequest)
-        self._connectSignal(self.view().search_dialog.getSignalSet().BeforeSearchRequest, self.beforeSearchRequest)
-        self._connectSignal(self.view().search_dialog.getSignalSet().NextSearchRequest, self.nextSearchRequest)
-        self._connectSignal(self.view().search_dialog.getSignalSet().FinishSearchRequest, self.finishSearchRequest)
+    def start(self) -> None:
+        self.blockSignals(False)
+        # self.tableController().start()
 
-        self.control_table.Run()
-        self.view().render()  # todo: 대체할 방법?
-
-    def Stop(self):
-        self.control_table.Stop()
-        super().Stop()
+    def stop(self) -> None:
+        self.blockSignals(True)
+        # self.tableController().stop()
 
     """
-    slot
+    model slot
+    * modelCountChanged
     """
     @MyPyqtSlot()
-    def tableModelUpdated(self) -> None:
-        current_count = 0
-        for data_iter in self.control_table.model().getDataList():
-            if data_iter.getState() == RecordModel.State.Inserted:
-                current_count += 1
-        self.view().remain_box.setCurrentVisitorNumber(current_count)
+    def modelCountChanged(self) -> None:
+        inserted_count = 0
+        for item_iter in self.tableController().model().itemList():
+            if item_iter.state() == RecordModel.State.Inserted:
+                inserted_count += 1
+        self.view().titleView().setRemainCount(inserted_count)
 
-    @MyPyqtSlot()
-    def scrollNextRequest(self) -> None:
-        table_view = self.control_table.view()
-        table_model = self.control_table.model()
-        CommandManager.postCommand(View.Table.FocusCellCommand(table_view, table_model.getDataCount(), 1))
-
-    @MyPyqtSlot(str, str)
-    def leaveRecordRequest(self, visitor_num: str, visitor_name: str) -> None:
-        if visitor_num == LeaveView.DefaultIDNumBlank:
-            ErrorLogger.reportError('출입증 번호가 비어있습니다.')
+    """
+    view slot
+    * rowDoubleClicked
+    * arriveButtonClicked
+    * leaveButtonClicked
+    * scrollButtonClicked
+    * takeoverButtonClicked
+    * deliveryButtonClicked
+    * searchButtonClicked
+    * reportButtonClicked
+    """
+    @MyPyqtSlot(int)
+    def rowDoubleClicked(self, row: int) -> None:
+        record_table_view, match_table_view = self.tableController().view(), self.view().matchTableView()
+        current_row = record_table_view.currentRow()
+        if record_table_view.isRowWritable(current_row):
+            if match_table_view.rowType(row) == MatchTableView.RowType.Dummy:
+                match_table_text_dict = {field_name_iter: RecordModel.DefaultValue
+                                         for field_name_iter in match_table_view.fieldNameList()}
+                # 이름은 그대로
+                match_table_text_dict[TableFieldOption.Necessary.NAME] = record_table_view.fieldText(current_row, TableFieldOption.Necessary.NAME)
+                match_table_text_dict[TableFieldOption.Necessary.ID] = RecordModel.IdDefaultValue
+            else:
+                id_text = record_table_view.fieldText(current_row, TableFieldOption.Necessary.ID)
+                if id_text == RecordModel.IdOverlapValue or id_text == RecordModel.DefaultValue:
+                    match_table_text_dict = match_table_view.rowTextDictionary(row)
+                    delete_field_name_list = []
+                    for field_name_iter in match_table_text_dict.keys():
+                        is_id_field = field_name_iter == TableFieldOption.Necessary.ID
+                        is_key_field = ConfigModule.TableField.fieldModel(field_name_iter).globalOption(TableFieldOption.Global.Key)
+                        if is_id_field or is_key_field:
+                            continue
+                        if record_table_view.fieldText(current_row, field_name_iter) != RecordModel.DefaultValue:
+                            delete_field_name_list.append(field_name_iter)
+                    for field_name_iter in delete_field_name_list:
+                        del match_table_text_dict[field_name_iter]
+                else:
+                    ErrorLogger.reportError('이미 고유번호가 입력되었거나 신규로 지정된 행은\n덮어쓸 수 없습니다.\n'
+                                            'X 버튼을 눌러 삭제한 후 새로 입력해 주세요.')
+                    return
+            CommandManager.postCommand(View.SetRowTextsCommand(record_table_view, current_row, match_table_text_dict))
+            CommandManager.postCommand(View.MyRenderRowCommand(record_table_view, current_row), priority=CommandPriority.Low)
+        else:
+            ErrorLogger.reportError('수정할 수 없는 행입니다.\nX 버튼을 눌러 삭제한 후 새로 입력해 주세요.')
             return
 
-        now_time = QTime().currentTime().toString('hh:mm')
-        now_worker = self.view().cur_worker.line.text()
-        leave_property_dict = {
-            '나가다시간': now_time,
-            '나가다근무자': now_worker
-        }
-        matched_record_list = []
-        for row in range(self.control_table.model().getDataCount()):
-            record_model = self.control_table.model().getData(row)
-            if record_model.getState() == RecordModel.State.Inserted:
-                if visitor_num == record_model.getProperty('출입증번호'):
-                    if visitor_name == LeaveView.DefaultNameAll or visitor_name == record_model.getProperty('성명'):
-                        #is_matched = True
-                        self.control_table.changeRecordRequest(row, leave_property_dict)
-                        matched_record_list.append(self.control_table.model().getData(row))
-                        #self.getSignalSet().WriteDatabaseRequest.emit(self.control_table.model().getData(row))
-        # todo 속도 개선 위해 우선 change한 결과를 먼저 보여주는 방향으로 바꾸었음
-        CommandManager.postCommand(ExecCommand())
-        if matched_record_list:
-            if Config.RecordOption.autoUpdateDB():
-                self.getSignalSet().WriteDatabaseRequest.emit(matched_record_list)
-            # todo 데이터베이스의 저장이 오래 걸림 - hub controller에서 작업하기
-            CommandManager.postCommand(EndCommand())
-        else:
-            ErrorLogger.reportError(f'출입증번호: {visitor_num} / 성명: {visitor_name}\n'
-                                    '해당하는 데이터가 기록부에 존재하지 않습니다.')
-        self.view().leave.setLineEditsDefault()
-
+    @MyPyqtSlot()
+    def arriveButtonClicked(self) -> None:
+        table_model, table_view = self.tableController().model(), self.tableController().view()
+        in_time, in_worker = ClockModule.time().toString('hh:mm'), self.view().currentWorkerView().currentWorkerText()
+        key_field_name_list = [field_model_iter.name() for field_model_iter in table_view.fieldModelList()
+                               if field_model_iter.globalOption(TableFieldOption.Global.Key) is True]
+        table_model.setAutoSave(False)
+        try:
+            change_list = []
+            for row_iter in range(table_view.rowCount()):
+                is_row_type_basic = table_view.rowType(row_iter) == RecordTableView.RowType.Basic
+                has_key_fields = all([table_view.fieldText(row_iter, field_name_iter) for field_name_iter in key_field_name_list])
+                if is_row_type_basic and has_key_fields:
+                    changed = True
+                    row_text_dict = table_view.rowTextDictionary(row_iter)
+                    row_text_dict[TableFieldOption.Necessary.IN_TIME] = in_time
+                    row_text_dict[TableFieldOption.Necessary.IN_WORKER] = in_worker
+                    if row_text_dict[TableFieldOption.Necessary.ID] == RecordModel.DefaultValue:
+                        row_text_dict[TableFieldOption.Necessary.ID] = RecordModel.IdDefaultValue
+                    CommandManager.postCommand(View.ClearRowTextCommand(table_view, row_iter))
+                    if row_iter < table_model.itemCount():
+                        change_list.append(Model.ChangeItemCommand(table_model, row_iter, row_text_dict))
+                    else:
+                        change_list.append(Model.AddItemCommand(table_model, row_text_dict))
+            for change_command_iter in change_list:
+                CommandManager.postCommand(change_command_iter)
+            CommandManager.addEndFunction(lambda: table_model.setAutoSave(True))
+            CommandManager.addEndFunction(lambda: table_model.save())
+            if change_list:
+                self.scrollButtonClicked()
+        except Exception as e:
+            table_model.setAutoSave(True)
+            raise e
 
     @MyPyqtSlot()
-    def arriveRequest(self):
-        # 입력되지 않은 데이터를 모두 레코드에 넣음
-        def setArriveData(property_dict: Dict[str, Any]) -> Dict[str, Any]:
-            copy_dict = property_dict
-            copy_dict['들어오다시간'] = Clock.getTime().toString('hh:mm')
-            copy_dict['들어오다근무자'] = self.view().cur_worker.line.text()
-            if copy_dict.get('고유번호') == RecordModel.DefaultString:
-                copy_dict['고유번호'] = RecordModel.IdDefaultString
-            return copy_dict
+    def leaveButtonClicked(self) -> None:
+        table_model, table_view = self.tableController().model(), self.tableController().view()
+        out_time, out_worker = ClockModule.time().toString('hh:mm'), self.view().currentWorkerView().currentWorkerText()
+        out_record_id, out_name = self.view().leaveView().recordIdText(), self.view().leaveView().nameText()
+        out_record_index_list = []
+        table_model.setAutoSave(False)
+        try:
+            for row_iter in range(table_model.itemCount()):
+                item_model_iter = table_model.item(row_iter)
+                is_state_inserted = item_model_iter.state() == RecordModel.State.Inserted
+                is_record_id_match = out_record_id == item_model_iter.fieldData(TableFieldOption.Necessary.RECORD_ID)
+                is_name_match = True if out_name == LeaveView.DefaultNameAll else out_name == item_model_iter.fieldData(TableFieldOption.Necessary.NAME)
+                if is_state_inserted and is_record_id_match and is_name_match:
+                    out_record_index_list.append(row_iter)
+                    out_data_dict = {}
+                    out_data_dict[TableFieldOption.Necessary.OUT_TIME] = out_time
+                    out_data_dict[TableFieldOption.Necessary.OUT_WORKER] = out_worker
+                    CommandManager.postCommand(Model.ChangeItemCommand(table_model, row_iter, out_data_dict))
+            if out_record_index_list:
+                self.signalSet().RecordTableController_UpdateDatabaseRequest.emit(out_record_index_list)
+                CommandManager.postCommand(View.FocusCellCommand(table_view, out_record_index_list[-1], 1))
+                self.view().leaveView().setDefault()
+            else:
+                ErrorLogger.reportError(f'출입증번호: {out_record_id} / 성명: {out_name}\n'
+                                        '해당하는 데이터가 기록부에 존재하지 않습니다.')
+            CommandManager.addEndFunction(lambda: table_model.setAutoSave(True))
+            CommandManager.addEndFunction(lambda: table_model.save())
+        except Exception as e:
+            table_model.setAutoSave(True)
+            raise e
 
-        table_model = self.control_table.model()
-        table_view = self.control_table.view()
+    @MyPyqtSlot()
+    def scrollButtonClicked(self) -> None:
+        table_view = self.tableController().view()
+        row = self.tableController().model().itemCount()
+        column = min([table_view.fieldColumn(field_model_iter.name()) for field_model_iter in table_view.fieldModelList()
+                      if not field_model_iter.globalOption(TableFieldOption.Global.NoModelData)])
+        if row != table_view.currentRow() and column != table_view.currentColumn():
+            CommandManager.postCommand(View.FocusCellCommand(table_view, row, column))
+        else:
+            table_view.setFocus()  # todo Command로?
 
-        for current_row in range(table_view.rowCount()):
-            current_row_type = table_view.rowType(current_row)
-            current_property_dict = table_view.getRowTexts(current_row)
-            table_model_record_count = table_model.getDataCount()
-            is_current_row_any_texts = table_view.isRowAnyTexts(current_row)
+    @MyPyqtSlot()
+    def takeoverButtonClicked(self) -> None:
+        table_model, table_view = self.tableController().model(), self.tableController().view()
+        time = self.view().takeoverView().timeText()
+        team = self.view().takeoverView().teamText()
+        worker = self.view().takeoverView().workerText()
+        name, name_count = None, 0
+        takeover_index = 0
+        for item_iter in table_model.itemList():
+            in_time_iter = item_iter.fieldData(TableFieldOption.Necessary.IN_TIME)
+            out_time_iter = item_iter.fieldData(TableFieldOption.Necessary.OUT_TIME)
+            in_time_check = in_time_iter and in_time_iter < time
+            out_time_check = (not out_time_iter) or out_time_iter >= time
+            if in_time_check:
+                takeover_index += 1
+                if out_time_check:
+                    if item_iter.state() != RecordModel.State.Takeover:
+                        name_count += 1
+                        if not name:
+                            name = item_iter.fieldData(TableFieldOption.Necessary.NAME)
+            else:
+                break
 
-            if (current_row_type in [RecordTableView.Option.Row.Basic, RecordTableView.Option.Row.NotInserted]) \
-                    and is_current_row_any_texts:
-                change_dict = setArriveData(current_property_dict)  # custom method
-                CommandManager.postCommand(View.Table.ClearRowTextCommand(table_view, current_row))
-                if current_row < table_model_record_count:
-                    self.control_table.changeRecordRequest(current_row, change_dict)
-                else:
-                    self.control_table.addRecordRequest(change_dict)
-                CommandManager.postCommand(ExecCommand())
-        #CommandManager.postCommand(View.Table.FocusCellCommand(table_view, table_model.getDataCount(), 1))
-
-
-    @MyPyqtSlot(str, str, str)
-    def takeoverRequest(self, time: str, team: str, worker: str):
-        time_idx, takeover_string = self.control_table.model().generateTakeoverInfo(time, team, worker)
-        delivery_string = self.view().delivery_dialog.text_edit.toPlainText()
+        takeover_record = RecordModel.createTakeoverRecord(time, team, worker, name, name_count)
+        takeover_string = takeover_record.fieldData(TableFieldOption.Necessary.TAKEOVER)
+        delivery_string = self.__delivery_dialog.text_edit.toPlainText()
 
         message_string = '인수인계\n'
         message_string += takeover_string + '\n\n'
@@ -180,89 +255,39 @@ class RecordMainController(AbstractController):
         if reply != MyMessageBox.Yes:
             return
         else:
-            try:
-                # todo: 아직도 default string 사용? recordmodel 생성자에서 사용하는 _adjustState때문에 필드가 존재해야함;
-                takeover_property_dict = {field: RecordModel.DefaultString for field in
-                                          RecordFieldModelConfig.getFieldList()}
-                takeover_property_dict['인수인계'] = takeover_string
-                takeover_property_dict['들어오다시간'] = time
-                takeover_property_dict['들어오다근무자'] = worker
-                takeover_property_dict['나가다시간'] = time
-                takeover_property_dict['나가다근무자'] = worker
-                takeover_property_dict['비고'] = delivery_string
-
-                self.control_table.insertRecordRequest(time_idx, takeover_property_dict)
-
-                # 현재근무자 텍스트를 교대자 이름으로 바꾸기
-                self.view().cur_worker.line.setText(worker)
-            except Exception as e:
-                ErrorLogger.reportError('인수인계 도중 에러 발생', e)
+            CommandManager.postCommand(Model.InsertItemCommand(table_model, takeover_index, takeover_record))
+            # todo -- 비고 란으로서 RECORD_ID을 사용함
+            CommandManager.postCommand(Model.ChangeItemCommand(table_model, takeover_index, {TableFieldOption.Necessary.RECORD_ID: delivery_string}))
 
     @MyPyqtSlot()
-    def updateDatabase(self) -> None:
-        table_model = self.control_table.model()
-        record_list = list(filter(lambda data: not data.isTakeoverRecord(), table_model.getDataList()))
-        self.getSignalSet().WriteDatabaseRequest.emit(record_list)
-        CommandManager.postCommand(EndCommand())
+    def reportButtonClicked(self) -> None:
+        try:
+            StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
+            subprocess.run([DefaultFilePath.ExcelExportEXE, self.tableController().model().filePath()], check=True)
+            MyMessageBox.information(self.view(), '알림', '마감 파일이 생성되었습니다.')
+        except Exception as e:
+            ErrorLogger.reportError('마감 파일 생성중 오류가 발생했습니다.\n'
+                                    f'{DefaultFilePath.ExcelExportEXE} 파일이 존재하는지 확인해 주세요.')
+        StatusBarManager.setIdleStatus()
 
+    """
+    searchSlot
+    * startSearch
+    * beforeSearch, nextSearch
+    * finishSearch
+    """
     @MyPyqtSlot(dict)
-    def writeDataToRecordTableRequest(self, property_dict: Dict[str, str]):
-        """
-        searchResultView에서 작성해달라는 요청을 받아 처리함
-        현재 recordTableView의 currentRow가 작성 가능한 상태라면 작성함
-        빈칸만 채워서 넣음
-        """
-
-        table_view = self.control_table.view()
-        error_string: str = None
-        if table_view.currentItem():
-            current_row = table_view.currentRow()
-            if table_view.isRowWritable(current_row):
-                is_already_new_name_row = table_view.item(current_row, table_view.fieldColumn('고유번호')).text() == RecordModel.IdDefaultString
-                if not is_already_new_name_row:
-                    writing_data = {}
-                    is_new_name_visitor = property_dict.get('고유번호') == RecordModel.IdDefaultString
-                    for field_iter in property_dict.keys():
-                        if field_iter in table_view.fieldList():
-                            is_write_field = DatabaseFieldModelConfig.getOption(field_iter, 'writing_field') is True
-                            is_empty_field = table_view.item(current_row, table_view.fieldColumn(field_iter)).text() == ''
-                            if is_write_field and (is_new_name_visitor or is_empty_field):
-                                writing_data[field_iter] = property_dict[field_iter]
-                    CommandManager.postCommand(View.Table.SetRowTextCommand(table_view, current_row, writing_data))
-                else:
-                    error_string = '[* 신규 *] 행에서는 데이터베이스를 이용한 입력이 불가능합니다.\n'
-                    error_string += 'X버튼을 눌러 데이터 삭제 후 다시 시도해 주세요.'
-            else:
-                error_string = '이미 데이터가 입력된 행입니다.'
-        else:
-            error_string = '현재 선택된 셀이 없습니다.'
-
-        if error_string:
-            ErrorLogger.reportError(error_string)
-
-        # table_view = self.control_table.view()
-        # if table_view.currentItem():
-        #     if table_view.isRowWritable(table_view.currentRow()):
-        #         writing_data = {}
-        #         for field_iter in property_dict.keys():
-        #             if DatabaseFieldModelConfig.getOption(field_iter, 'writing_field') is True:
-        #                 writing_data[field_iter] = property_dict[field_iter]
-        #         CommandManager.postCommand(View.Table.SetRowTextCommand(table_view, table_view.currentRow(), writing_data))
-        #         birtyday_column = table_view.fieldColumn('생년월일')
-        #         CommandManager.postCommand(View.Table.FocusCellCommand(table_view, table_view.currentRow(), birtyday_column))
-
-    @MyPyqtSlot(dict)
-    def searchRecordViewRequest(self, search_dict: Dict[str, str]) -> None:
-        table_view = self.control_table.view()
+    def startSearch(self, find_func_dict: Dict[str, Callable[[str], bool]]) -> None:
+        table_view = self.tableController().view()
         match_row_list = []
         for row_iter in range(table_view.rowCount()):
-            if table_view.columnSpan(row_iter, 1) != 1:
+            if table_view.rowType(row_iter) in [RecordTableView.RowType.Takeover]:
                 continue
-            property_dict = table_view.getRowTexts(row_iter)
+            row_text_dict = table_view.rowTextDictionary(row_iter)
             match_flag = True
-            for field_iter, property_iter in search_dict.items():
-                if property_dict.get(field_iter):
-                    if property_dict[field_iter].find(property_iter) != -1:
+            for field_iter, func_iter in find_func_dict.items():
+                if row_text_dict.get(field_iter):
+                    if func_iter(row_text_dict[field_iter]):
                         continue
                 match_flag = False
                 break
@@ -270,41 +295,37 @@ class RecordMainController(AbstractController):
                 match_row_list.append(row_iter)
 
         if match_row_list:
-            self.__setSearchRowList(match_row_list)
+            table_view.setHighLightRowList(match_row_list)
             for match_row_iter in match_row_list:
-                table_view.highlightRow(match_row_iter)
-                table_view.renderRow(match_row_iter)
+                table_view.myRenderRow(match_row_iter)
             table_view.selectRow(match_row_list[0])
-        #table_view.render()
 
     @MyPyqtSlot()
-    def beforeSearchRequest(self) -> None:
-        table_view = self.control_table.view()
-        current_focus_row = table_view.currentRow()
-        current_match_idx = self.__getSearchRowList().index(current_focus_row)
-
-        if current_match_idx == 0:
-            table_view.selectRow(self.__getSearchRowList()[-1])
-        else:
-            table_view.selectRow(self.__getSearchRowList()[current_match_idx - 1])
-
-
-    @MyPyqtSlot()
-    def nextSearchRequest(self) -> None:
-        table_view = self.control_table.view()
-        current_focus_row = table_view.currentRow()
-        current_match_idx = self.__getSearchRowList().index(current_focus_row)
-
-        if current_match_idx == len(self.__getSearchRowList()) - 1:
-            table_view.selectRow(self.__getSearchRowList()[0])
-        else:
-            table_view.selectRow(self.__getSearchRowList()[current_match_idx + 1])
+    def beforeSearch(self) -> None:
+        table_view = self.tableController().view()
+        current_row = table_view.currentRow()
+        highlight_row_list = table_view.highLightRowList()
+        if current_row is not None and highlight_row_list:
+            row_iter = current_row - 1
+            while row_iter not in highlight_row_list:
+                row_iter = (row_iter - 1) if row_iter >= 0 else table_view.rowCount() - 1
+            table_view.selectRow(row_iter)
 
     @MyPyqtSlot()
-    def finishSearchRequest(self) -> None:
-        table_view = self.control_table.view()
-        table_view.clearHighlight()
-        self.__setSearchRowList([])
-        table_view.render()
+    def nextSearch(self) -> None:
+        table_view = self.tableController().view()
+        current_row = table_view.currentRow()
+        highlight_row_list = table_view.highLightRowList()
+        if current_row is not None and highlight_row_list:
+            row_iter = current_row + 1
+            while row_iter not in highlight_row_list:
+                row_iter = (row_iter + 1) if row_iter < table_view.rowCount() else 0
+            table_view.selectRow(row_iter)
 
-
+    @MyPyqtSlot()
+    def finishSearch(self) -> None:
+        table_view = self.tableController().view()
+        highlight_row_list = table_view.highLightRowList()
+        table_view.setHighLightRowList([])
+        for row_iter in highlight_row_list:
+            table_view.myRenderRow(row_iter)

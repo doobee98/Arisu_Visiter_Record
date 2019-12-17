@@ -1,0 +1,1 @@
+pyinstaller --clean --onefile --noconsole setup.py

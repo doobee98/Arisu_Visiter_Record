@@ -1,14 +1,23 @@
 import inspect, sys, traceback
 from datetime import datetime
 from PyQt5.QtWidgets import QApplication
-from Utility.Abstract.View.MyMessageBox import *
-from Utility.File.BasicFileTable import *
+from Utility.MyPyqt.MyMessageBox import *
+from Utility.Info.DefaultFilePath import *
+
+"""
+ErrorLogger
+전역 클래스
+에러 발생시 에러창을 띄우고 로그 파일을 작성함
+"""
 
 
-# try except
 class ErrorLogger:
     __FileName = 'ErrorReport.txt'
 
+    """
+    method
+    * reportError (exception 발생시 critical, 강제종료함 / exception 없을 시 warning 띄움)
+    """
     @classmethod
     def reportError(cls, what: str = None, exception: Exception = None):
         try:
@@ -28,8 +37,14 @@ class ErrorLogger:
                 MyMessageBox.warning(QApplication.activeWindow(), '경고', what)
         except Exception as e:
             MyMessageBox.critical(QApplication.activeWindow(), '위험',
-                                 'ErrorLogger -처리할 수 없는 에러입니다.' + '\n' + str(e))
+                                 'ErrorReport.txt 작성 중 에러가 발생했습니다.' + '\n' + str(e))
 
+    """
+    private method
+    * __createBaseErrorString
+    * __writeReportFile
+    * __debugPrint
+    """
     @classmethod
     def __createBaseErrorString(cls, error_info) -> str:
         (filepath, line_number, function_name, lines, index) = error_info
@@ -43,7 +58,7 @@ class ErrorLogger:
     @classmethod
     def __writeReportFile(cls, error_string: str):
         error_string += '\n\n'
-        directory, file_name = BasicFileTable.Log, cls.__FileName
+        directory, file_name = DefaultFilePath.Log, cls.__FileName
         file_path = (directory + '\\' + file_name) if directory != '' else file_name
         with open(file_path, 'a', encoding='utf-8') as f:
             f.write(error_string)

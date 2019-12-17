@@ -1,152 +1,171 @@
-from View.Record.RecordTitleView import *
-from Utility.ClockView import *
-from View.Record.CurWorkerView import *
-from View.Record.LeaveView import *
+from Utility.MyPyqt.MyDefaultWidgets import *
+from Utility.MyPyqt.ShowingView import *
+from View.Table.RecordTableView import *
+from View.Record.TitleView import *
 from View.Record.TakeoverView import *
-from View.Record.SearchResultTableView import *
-from View.Record.ArriveBtnView import *
-from View.Record.ScrollButtonView import *
-from View.Record.FunctionGroupView import *
-from View.Record.RecordTable.RecordTableView import *
-from View.Record.RemainNumberBoxView import *
-
-from Utility.Abstract.View.Table.Search.TableSearchDialog import *
-from View.Record.DeliveryDialog import *
+from View.Record.CurrentWorkerView import *
+from View.Record.ArriveView import *
+from View.Record.ScrollView import *
+from View.Record.LeaveView import *
+from View.Table.MatchTableView import *
+from View.Record.FunctionView import *
 from Utility.Manager.ShortCutManager import *
 from Utility.Manager.CommandManager import *
-import subprocess
+
+"""
+RecordMainView
+* 타이틀 (제목, 장소, 날짜, 잔여인원, 시계)
+* 기록부 테이블
+* 검색 결과 테이블
+* 현재근무자 박스, 들어오다 박스, 이어쓰기 박스, 나가다 박스, 인수인계 박스
+* 기능 박스
+"""
 
 
 class RecordMainViewSignal(QObject):
-    UpdateDatabaseRequest = pyqtSignal()
-    def __init__(self, parent=None):
+    MatchTableView_RowDoubleClicked = pyqtSignal(int)
+    ArriveView_ArriveButtonClicked = pyqtSignal()
+    LeaveView_LeaveButtonClicked = pyqtSignal()
+    ScrollView_ScrollButtonClicked = pyqtSignal()
+    TakeoverView_TakeoverButtonClicked = pyqtSignal()
+    TakeoverView_DeliveryButtonClicked = pyqtSignal()
+    FunctionView_SearchButtonClicked = pyqtSignal()
+    FunctionView_OptionButtonClicked = pyqtSignal()
+    FunctionView_ReportButtonClicked = pyqtSignal()
+
+    def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
 
-class RecordMainView(QWidget):
-    def __init__(self, table_model: RecordTableModel):
-        super().__init__()
-
+class RecordMainView(QWidget, ShowingView):
+    def __init__(self, table_view: RecordTableView, parent: QWidget = None):
+        super().__init__(parent)
         self.__signal_set = RecordMainViewSignal(self)
-        self.__table_model = table_model
-        date = table_model.getRecordDate()
-        location = table_model.getLocation()
+        self.__record_table_view: RecordTableView = table_view
 
-        self.record_table = RecordTableView(table_model)
+        self.__title_view = TitleView(self)
+        self.__match_table_view = MatchTableView(self)
+        self.__takeover_view = TakeoverView(self)
+        self.__current_worker_view = CurrentWorkerView(self)
+        self.__arrive_view = ArriveView(self)
+        self.__scroll_view = ScrollView(self)
+        self.__leave_view = LeaveView(self)
+        self.__function_view = FunctionView(self)
 
-        self.title = RecordTitleView(date, location)
-        self.clock = ClockView()
-        self.search_table = SearchResultTableView()
-        self.take_over = TakeoverView()
-        self.cur_worker = CurWorkerView()
-        self.scroll_btn = ScrollButtonView()
-        self.arrive_btn = ArriveBtnView()
-        self.leave = LeaveView()
-        self.remain_box = RemainNumberBoxView()
-        self.function_group = FunctionGroupView()
-        self.search_dialog = TableSearchDialog(self.record_table)
-        self.delivery_dialog = DeliveryDialog(DeliveryModel(location))
-        self.take_over.getSignalSet().DeliveryBtnClicked.connect(self.deliveryDialogExec)
+        # connect
+        self.__match_table_view.signalSet().RowDoubleClicked.connect(lambda row: self.signalSet().MatchTableView_RowDoubleClicked.emit(row))
+        self.__arrive_view.signalSet().ArriveButtonClicked.connect(lambda: self.signalSet().ArriveView_ArriveButtonClicked.emit())
+        self.__leave_view.signalSet().LeaveButtonClicked.connect(lambda: self.signalSet().LeaveView_LeaveButtonClicked.emit())
+        self.__takeover_view.signalSet().TakeoverButtonClicked.connect(lambda: self.signalSet().TakeoverView_TakeoverButtonClicked.emit())
+        self.__takeover_view.signalSet().DeliveryButtonClicked.connect(lambda: self.signalSet().TakeoverView_DeliveryButtonClicked.emit())
+        self.__scroll_view.signalSet().ScrollButtonClicked.connect(lambda: self.signalSet().ScrollView_ScrollButtonClicked.emit())
+        self.__function_view.signalSet().SearchButtonClicked.connect(lambda: self.signalSet().FunctionView_SearchButtonClicked.emit())
+        self.__function_view.signalSet().ReportButtonClicked.connect(lambda: self.signalSet().FunctionView_ReportButtonClicked.emit())
 
-        self.function_group.setSearchSlot(self.searchDialogExec)
-        self.function_group.setReportSlot(self.reportExcel)
+        if ConfigModule.Application.enableShortCut():
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Q, lambda: self.scrollView().signalSet().ScrollButtonClicked.emit())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_A, lambda: self.arriveView().signalSet().ArriveButtonClicked.emit())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_D, lambda: self.leaveView().leaveButtonClicked())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_F, lambda: self.functionView().signalSet().SearchButtonClicked.emit())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_X, lambda: self.recordTableView().cutSelectedItems())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_C, lambda: self.recordTableView().copySelectedItems())
+            ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_V, lambda: self.recordTableView().pasteSelectedItems())
 
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Q, self.scroll_btn.scrollBtnClicked)
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_A, self.arrive_btn.arriveBtnClicked)
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_D, self.leave.leaveBtnClicked)
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_F, self.searchDialogExec)
-
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Z, lambda: CommandManager.undo())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_Y, lambda: CommandManager.redo())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_X, lambda: self.record_table.cutSelectedItems())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_C, lambda: self.record_table.copySelectedItems())
-        ShortCutManager.addShortCut(self, Qt.CTRL + Qt.Key_V, lambda: self.record_table.pasteSelectedItems())
-        # todo 임시 테스트
-
-        hbox_top = QHBoxLayout()
-        hbox_top.addWidget(self.remain_box, 1)
-        hbox_top.addWidget(self.title, 7)
-        hbox_top.addWidget(self.clock, 2)  # todo 길이가 database랑 다름
-
+        # 레이아웃 구성
         vbox_button = QVBoxLayout()
-        vbox_button.addWidget(self.scroll_btn)
-        vbox_button.addWidget(self.arrive_btn)
+        vbox_button.addWidget(self.__scroll_view)
+        vbox_button.addWidget(self.__arrive_view)
 
         grid_inout = QGridLayout()
-        grid_inout.addWidget(self.cur_worker, 0, 0, 1, 2)
+        grid_inout.addWidget(self.__current_worker_view, 0, 0, 1, 2)
         grid_inout.addLayout(vbox_button, 1, 0)
-        grid_inout.addWidget(self.leave, 1, 1)
+        grid_inout.addWidget(self.__leave_view, 1, 1)
+        group_inout = QGroupBox()
+        group_inout.setLayout(grid_inout)
 
-        hbox_middle = QHBoxLayout()
-        hbox_middle.addStretch(1)
-        hbox_middle.addWidget(self.search_table)
-        hbox_middle.addStretch(2)
-        hbox_middle.addWidget(self.take_over)
-        hbox_middle.addStretch(2)
-        hbox_middle.addLayout(grid_inout)
-        hbox_middle.addStretch(2)
-        hbox_middle.addWidget(self.function_group)
-        hbox_middle.addStretch(1)
+        middle_hbox = QHBoxLayout()
+        middle_hbox.addStretch(1)
+        middle_hbox.addWidget(self.__match_table_view)
+        middle_hbox.addStretch(2)
+        middle_hbox.addWidget(self.__takeover_view)
+        middle_hbox.addStretch(2)
+        middle_hbox.addWidget(group_inout)
+        middle_hbox.addStretch(2)
+        middle_hbox.addWidget(self.__function_view)
+        middle_hbox.addStretch(1)
 
-        hbox_bottom = QHBoxLayout()
-        hbox_bottom.addStretch(1)
-        hbox_bottom.addWidget(self.record_table)
-        hbox_bottom.addStretch(2)
+        bottom_hbox = QHBoxLayout()
+        bottom_hbox.addStretch(1)
+        bottom_hbox.addWidget(self.__record_table_view)
+        bottom_hbox.addStretch(2)
 
-        vbox_total = QVBoxLayout(self)
-        vbox_total.addLayout(hbox_top)
-        vbox_total.addStretch(1)
-        vbox_total.addLayout(hbox_middle)
-        vbox_total.addStretch(1)
-        vbox_total.addLayout(hbox_bottom)
-        vbox_total.addStretch(1)
+        # 전체 레이아웃 구성
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.__title_view)
+        vbox.addStretch(1)
+        vbox.addLayout(middle_hbox)
+        vbox.addStretch(1)
+        vbox.addLayout(bottom_hbox)
+        vbox.addStretch(1)
+        self.setLayout(vbox)
+        self.setFont(MyDefaultWidgets.basicQFont())
+        self.matchTableView().setFont(MyDefaultWidgets.basicQFont())  # todo 얘는 왜 자동으로 안되지?
 
-        self.setLayout(vbox_total)
-        #self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-
-        #self.setFont(BaseUI.basicQFont())  # 전역폰트
-
-
-    def __str__(self):
-        return 'RecordMainView'
-
-    def getSignalSet(self) -> RecordMainViewSignal:
+    """
+    property
+    * signalSet
+    * location, date
+    * recordTableView, matchTableView
+    * arriveView, leaveView, takeoverView, scrollView, currentWorkerView, titleView, functionView
+    """
+    def signalSet(self) -> RecordMainViewSignal:
         return self.__signal_set
 
-    def render(self) -> None:
-        self.title.render()
-        self.search_table.render()
-        self.record_table.render()
+    def location(self) -> str:
+        return self.__tableModel().location() if self.__tableModel() else None
 
-    def activeView(self) -> QWidget:
-        if self.search_dialog.isVisible():
-            return self.search_dialog
-        else:
-            return self
+    def date(self) -> str:
+        return self.__tableModel().date() if self.__tableModel() else None
 
+    def recordTableView(self) -> RecordTableView:
+        return self.__record_table_view
+
+    def matchTableView(self) -> MatchTableView:
+        return self.__match_table_view
+
+    def arriveView(self) -> ArriveView:
+        return self.__arrive_view
+
+    def leaveView(self) -> LeaveView:
+        return self.__leave_view
+
+    def takeoverView(self) -> TakeoverView:
+        return self.__takeover_view
+
+    def scrollView(self) -> ScrollView:
+        return self.__scroll_view
+
+    def currentWorkerView(self) -> CurrentWorkerView:
+        return self.__current_worker_view
+
+    def titleView(self) -> TitleView:
+        return self.__title_view
+
+    def functionView(self) -> FunctionView:
+        return self.__function_view
+
+    """
+    advanced property
+    * __tableModel
+    """
     def __tableModel(self) -> RecordTableModel:
-        return self.__table_model
+        return self.recordTableView().myModel()
 
-    @MyPyqtSlot()
-    def searchDialogExec(self) -> None:
-        self.search_dialog.exec_()
-
-    @MyPyqtSlot()
-    def deliveryDialogExec(self) -> None:
-        self.delivery_dialog.exec_()
-
-    @MyPyqtSlot()
-    def reportExcel(self) -> None:
-        try:
-            StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
-            subprocess.run([BasicFileTable.ExportEXE, self.__tableModel().filePath()], check=True)
-            MyMessageBox.information(self, '알림', '마감 파일이 생성되었습니다.')
-        except Exception as e:
-            ErrorLogger.reportError('마감 파일 생성중 오류가 발생했습니다.\n'
-                                    f'{BasicFileTable.ExportEXE} 파일이 존재하는지 확인해 주세요.')
-        StatusBarManager.setIdleStatus()
-        if not Config.RecordOption.autoUpdateDB():
-            self.getSignalSet().UpdateDatabaseRequest.emit()
-
-
-
+    """
+    override
+    * activeView
+    """
+    def activeView(self) -> 'ShowingView':
+        return self

@@ -1,5 +1,5 @@
-import InitializeArisuRecord
-import sys, traceback
+from Utility.Info.InitializeArisuRecord import *
+import sys
 from PyQt5.QtWidgets import QApplication
 from Controller.MainController import *
 
@@ -9,8 +9,9 @@ if __name__ == '__main__':
         # Execute App
         app = QApplication(sys.argv)
         ExecuteLogger.printLog(str(sys.argv))  # todo 제거하기
-        c = MainController()
-        c.Run()
+        view = MainView()
+        c = MainController(view)
+        c.start()
         if len(sys.argv) > 1:
             for idx in range(1, len(sys.argv)):
                 c.openRecordFile(sys.argv[idx])  # todo 오늘꺼를 또 열수도 있음

@@ -1,86 +1,98 @@
-from View.Database.DatabaseTable.DatabaseTableView import *
+from View.Table.DatabaseTableView import *
 from Utility.Manager.CommandManager import *
-from Controller.AbstractController import *
-from Model.Command.ConcreteCommand.Model import Model
-from Model.Command.ConcreteCommand.View import View
+
+"""
+DatabaseTableController
+"""
 
 
-class DatabaseTableController(AbstractController):
-    def __init__(self, model: DatabaseModel, view: DatabaseTableView):
-        super().__init__()
-        self.__model = model
-        self.__view = view
+class DatabaseTableControllerSignal(QObject):
+    FindDatabaseRequest = pyqtSignal(dict)
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
 
-        self.__view.setModel(self.__model)
+
+class DatabaseTableController(QObject):
+    def __init__(self, view: DatabaseTableView, parent: QObject = None):
+        super().__init__(parent)
+        self.__signal_set = DatabaseTableControllerSignal(self)
+        self.__view: DatabaseTableView = view
+        self.__view.show()
+        self.__view.signalSet().EditButtonToggled.connect(CommandSlot(self.editButtonToggled, end_command=NullCommand()))  # 경우에 따라 나누어서 직접 처리함
+        self.__view.signalSet().RemoveButtonClicked.connect(CommandSlot(self.removeButtonClicked))
+        self.__view.signalSet().Paste.connect(CommandSlot(self.paste))
+        self.__view.signalSet().FieldHeaderDoubleClicked.connect(CommandSlot(self.sortModel))
 
     """
     property
-    * model (override)
-    * view (override)
+    * signalSet
+    * model, view
     """
-    def model(self) -> DatabaseModel:
-        return self.__model
+    def signalSet(self) -> DatabaseTableControllerSignal:
+        return self.__signal_set
+
+    def model(self) -> DatabaseTableModel:
+        return self.__view.myModel()
 
     def view(self) -> DatabaseTableView:
         return self.__view
 
     """
     method
-    * Run, Stop  (override)
+    * start, stop
     """
-    def Run(self):
-        self._connectSignal(self.model().getSignalSet().TableModelUpdated, self.updateViewRequest)
-        self._connectSignal(self.view().getSignalSet().DeleteDataRequest, CommandSlot(self.deleteVisitorRequest))
-        self._connectSignal(self.view().getSignalSet().ChangeDataRequest, CommandSlot(self.changeVisitorRequest))
-        self._connectSignal(self.view().getSignalSet().SortTableRequest, CommandSlot(self.sortDatabaseRequest))
-        self._connectSignal(self.view().getSignalSet().ChangeDataGroupRequest, CommandSlot(self.changeGroupRequest))
-        self.view().render()
+    def start(self) -> None:
+        self.blockSignals(False)
 
-    def Stop(self):
-        super().Stop()
-        self.view().render()
+    def stop(self) -> None:
+        self.blockSignals(True)
 
     """
     slot
+    * editButtonClicked, removeClicked
     """
-    @MyPyqtSlot()
-    def updateViewRequest(self):
-        self.view().render()
-        #CommandManager.postCommand(View.Table.RenderCommand(self.view), priority=Priority.Low)
-
-    @MyPyqtSlot(dict)
-    def addNewVisitorRequest(self, property_dict: Dict[str, str]):
-        idx = self.model().getDataCount()
-        #CommandManager.postCommand(View.Table.InsertRowCommand(self.view(), idx))
-        CommandManager.postCommand(Model.AddModelCommand(self.model(), property_dict))
-        CommandManager.postCommand(View.Table.FocusCellCommand(self.view(), idx, 1))
-
-    @MyPyqtSlot(int, dict)
-    def changeVisitorRequest(self, idx: int, property_dict: Dict[str, str]):
-        if 0 <= idx < self.model().getDataCount():
-            CommandManager.postCommand(Model.ChangeModelCommand(self.model(), idx, property_dict))
-            CommandManager.postCommand(View.Table.FocusCellCommand(self.view(), idx, 1))
+    @MyPyqtSlot(int, bool)
+    def editButtonToggled(self, row: int, checked: bool) -> None:
+        if checked:
+            for field_model_iter in self.view().fieldModelList():
+                if not field_model_iter.globalOption(TableFieldOption.Global.Uneditable):
+                    self.view().openPersistentEditor(self.view().fieldItem(row, field_model_iter.name()))
         else:
-            ErrorLogger.reportError(f'Invalid Idx: {idx}', IndexError)
+            field_data_dict = {}
+            for field_model_iter in self.view().fieldModelList():
+                if not field_model_iter.globalOption(TableFieldOption.Global.Uneditable):
+                    self.view().closePersistentEditor(self.view().fieldItem(row, field_model_iter.name()))
+                    field_data_dict[field_model_iter.name()] = self.view().fieldText(row, field_model_iter.name())
+            CommandManager.postCommand(Model.ChangeItemCommand(self.model(), row, field_data_dict))
+            CommandManager.postCommand(EndCommand())
 
     @MyPyqtSlot(int)
-    def deleteVisitorRequest(self, idx: int):
-        if 0 <= idx < self.model().getDataCount():
-            CommandManager.postCommand(Model.DeleteModelCommand(self.model(), idx))
-            #CommandManager.postCommand(View.Table.RemoveRowCommand(self.view(), idx))
-            CommandManager.postCommand(View.Table.FocusCellCommand(self.view(), idx, 1))  # todo removerow 아직 안넣어서 임시
+    def removeButtonClicked(self, row: int) -> None:
+        if row < self.model().itemCount():
+            CommandManager.postCommand(Model.RemoveItemCommand(self.model(), row))
         else:
-            ErrorLogger.reportError(f'Invalid Idx: {idx}', IndexError)
-
-    @MyPyqtSlot(str)
-    def sortDatabaseRequest(self, field: str) -> None:
-        CommandManager.postCommand(Model.SortTableModelCommand(self.model(), field))
+            CommandManager.postCommand(View.ClearRowTextCommand(self.view(), row))
 
     @MyPyqtSlot(dict)
-    def changeGroupRequest(self, idx_property_dict: Dict[int, Dict[str, str]]):
-        for idx in idx_property_dict.keys():
-            if 0 <= idx < self.model().getDataCount():
-                self.changeVisitorRequest(idx, idx_property_dict[idx])
-            else:
-                CommandManager.postCommand(View.Table.SetRowTextCommand(self.view(), idx, idx_property_dict[idx]))
+    def paste(self, paste_row_text_dict: Dict[int, Dict[str, str]]) -> None:
+        self.model().setAutoSave(False)
+        try:
+            for row_iter, paste_dict_iter in paste_row_text_dict.items():
+                CommandManager.postCommand(View.SetRowTextsCommand(self.view(), row_iter, paste_dict_iter))
+            CommandManager.addEndFunction(lambda: self.model().setAutoSave(True))
+            CommandManager.addEndFunction(lambda: self.model().save())
+        except Exception as e:
+            self.model().setAutoSave(True)
+            raise e
+
+    @MyPyqtSlot(str)
+    def sortModel(self, field_name: str) -> None:
+        self.model().setAutoSave(False)
+        try:
+            CommandManager.postCommand(Model.SortItemsCommand(self.model(), field_name))
+            CommandManager.addEndFunction(lambda: self.model().setAutoSave(True))
+            CommandManager.addEndFunction(lambda: self.model().save())
+        except Exception as e:
+            self.model().setAutoSave(True)
+            raise e
 
