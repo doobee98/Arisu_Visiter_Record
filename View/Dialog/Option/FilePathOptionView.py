@@ -78,7 +78,7 @@ class FilePathOptionView(AbstractOptionView):
                 self.myRender()
                 return
         for file_type_enum_iter, data_iter in change_dict.items():
-            self.__model.setFilePath(file_type_enum_iter, data_iter)
+            self.__model.setFilePathDirectory(file_type_enum_iter, data_iter)
         if has_close:
             sys.exit()
 

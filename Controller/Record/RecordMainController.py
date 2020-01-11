@@ -214,7 +214,7 @@ class RecordMainController(QObject):
         row = self.tableController().model().itemCount()
         column = min([table_view.fieldColumn(field_model_iter.name()) for field_model_iter in table_view.fieldModelList()
                       if not field_model_iter.globalOption(TableFieldOption.Global.NoModelData)])
-        if row != table_view.currentRow() and column != table_view.currentColumn():
+        if row != table_view.currentRow() or column != table_view.currentColumn():
             CommandManager.postCommand(View.FocusCellCommand(table_view, row, column))
         else:
             table_view.setFocus()  # todo Command로?
@@ -258,6 +258,7 @@ class RecordMainController(QObject):
             CommandManager.postCommand(Model.InsertItemCommand(table_model, takeover_index, takeover_record))
             # todo -- 비고 란으로서 RECORD_ID을 사용함
             CommandManager.postCommand(Model.ChangeItemCommand(table_model, takeover_index, {TableFieldOption.Necessary.RECORD_ID: delivery_string}))
+            self.view().currentWorkerView().setCurrentWorkerText(worker)
 
     @MyPyqtSlot()
     def reportButtonClicked(self) -> None:
