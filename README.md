@@ -1,7 +1,7 @@
 # Arisu_Visiter_Record
 	아리수정수센터 출입자관리시스템
 
-
+    ![Alt Text](https://github.com/doobee98/Arisu_Visiter_Record/README_imgs/test.gif)
 
 	현재 버전: 1.1.1
 
