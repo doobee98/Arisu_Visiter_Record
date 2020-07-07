@@ -1,6 +1,7 @@
-<img src='README_imgs/test.gif' align="right">
-
 # Arisu_Visiter_Record
+
+<img src='README_imgs/test.gif'>
+
 	아리수정수센터 출입자관리시스템
 
 	현재 버전: 1.1.1
