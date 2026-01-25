@@ -51,5 +51,6 @@ except Exception as e:
         QMessageBox.critical(main, '위험', error_string)
         app.exec_()
     else:
+        print(error_string)
         QMessageBox.critical(QApplication.activeWindow(), '위험', error_string)
     sys.exit()
