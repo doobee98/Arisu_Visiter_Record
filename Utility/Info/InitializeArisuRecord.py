@@ -11,10 +11,10 @@ InitializeArisuRecord
 """
 
 _user_first_directory = os.getcwd()
-_exe_first_directory = os.path.dirname(sys.argv[0])
+_excel_exe_first_directory = os.path.dirname(sys.argv[0])
 try:
     # 현재 작업경로 ArisuRecord 폴더 내부로 변경
-    os.chdir(_exe_first_directory)
+    os.chdir(_excel_exe_first_directory)
     while True:
         current_directory = os.getcwd()
         if os.path.isdir(current_directory) and current_directory.endswith('ArisuRecord'):  # todo DefaultFilePath를 사용하지 못함
@@ -42,7 +42,7 @@ except Exception as e:
     error_string += '기본 파일을 로드하는 동안 에러가 발생했습니다.\n'
     error_string += f'{"ArisuRecord"} 파일이나 경로가 존재하지 않습니다.\n'
     error_string += f'{"현재파일 위치":<7}: {_user_first_directory}\n'
-    error_string += f'{"실행파일 위치":<7}: {_exe_first_directory}\n'
+    error_string += f'{"실행파일 위치":<7}: {_excel_exe_first_directory}\n'
     error_string += f'{"오류":<14}: {str(e)}'
 
     if QApplication.instance():
