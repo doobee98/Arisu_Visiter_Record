@@ -11,7 +11,7 @@ InitializeArisuRecord
 """
 
 _user_first_directory = os.getcwd()
-_exe_first_directory = os.path.dirname(sys.argv[0]) or 'C:\Program Files\ArisuRecord' # todo env 등으로 대체하기
+_exe_first_directory = os.path.dirname(sys.argv[0])
 try:
     # 현재 작업경로 ArisuRecord 폴더 내부로 변경
     os.chdir(_exe_first_directory)
