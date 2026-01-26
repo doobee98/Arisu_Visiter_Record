@@ -1,4 +1,4 @@
-import os
+import sys, os
 
 """
 DefaultFilePath
@@ -18,7 +18,7 @@ class DefaultFilePath:
     MainFile = 'ArisuRecord'
 
     USER = None                                         # InitializeArisuRecord에서 cls.registerUserPath로 등록 후 사용
-    HOME = os.getcwd()                                  # InitializeArisuRecord에서 현재 경로를 프로그램 설치 경로로 바꿔줌
+    ExcelExportEXE = None                               # InitializeArisuRecord에서 cls.initializeExcelExportExePath로 초기화 후 사용
     DATA = os.path.expanduser("~\\ArisuRecordData")
     SOURCE = os.path.join(DATA, 'AppData\\src')
 
@@ -32,10 +32,26 @@ class DefaultFilePath:
     ExcelRecordSample = os.path.join(SOURCE, 'ReportSample.xlsx')
     ExcelDatabaseSample = os.path.join(SOURCE, 'DatabaseSample.xlsx')
     Icon = os.path.join(SOURCE, 'ArisuIcon.ico')
-    ExcelExportEXE = os.path.join(HOME, 'Excel\\ConvertExcel.exe')
 
     @classmethod
     def registerUserPath(cls, user: str) -> None:
         cls.USER = user
 
+    @classmethod
+    def initializeExcelExportExePath(cls) -> None:
+        try:
+            _excel_exe_first_directory = os.path.dirname(sys.argv[0])
 
+            # 현재 작업경로 ArisuRecord 폴더 내부로 변경
+            os.chdir(_excel_exe_first_directory)
+            while True:
+                current_directory = os.getcwd()
+                if os.path.isdir(current_directory) and current_directory.endswith('ArisuRecord'):  # todo DefaultFilePath를 사용하지 못함
+                    break
+                os.chdir('..\\')
+                if current_directory == os.getcwd():
+                    raise RecursionError
+
+            cls.ExcelExportEXE = os.path.join(current_directory, 'Excel\\ConvertExcel.exe')
+        except Exception as e:
+            print('엑셀 변환 파일 경로 초기화 오류:', str(e))

@@ -262,6 +262,10 @@ class RecordMainController(QObject):
 
     @MyPyqtSlot()
     def reportButtonClicked(self) -> None:
+        if (DefaultFilePath.ExcelExportEXE is None):
+            ErrorLogger.reportError(f'엑셀 변환 파일 경로가 올바르지 않습니다. ({DefaultFilePath.ExcelExportEXE})')
+            return
+
         try:
             StatusBarManager.setMessage('엑셀 마감 파일 생성 중')
             subprocess.run([DefaultFilePath.ExcelExportEXE, self.tableController().model().filePath()], check=True)
