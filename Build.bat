@@ -8,7 +8,7 @@ call Install\Bat\ProgramBuild.bat    rem ArisuRecord.zip
 call Install\Bat\InstallBuild.bat    rem setup.exe
 
 cd dist
-Bandizip.exe c -y ArisuRecord_64bit.zip ArisuRecord.zip ArisuRecordData.zip setup.exe
+python ..\zip.py ArisuRecord_64bit.zip ArisuRecord.zip ArisuRecordData.zip setup.exe
 del /q "ArisuRecord.zip"
 del /q "ArisuRecordData.zip"
 del /q "setup.exe"

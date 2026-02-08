@@ -11,7 +11,7 @@ mkdir UserData\Delivery
 
 xcopy ..\Install\BuildSource AppData\src\ /e /h /k /y
 
-Bandizip.exe c -y ArisuRecordData.zip AppData UserData
+python ..\zip.py ArisuRecordData.zip AppData UserData
 rmdir /s /q AppData
 rmdir /s /q UserData
 cd ..
