@@ -14,6 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
+start = "scripts:start"
 build = "scripts:build"
 
 [build-system]

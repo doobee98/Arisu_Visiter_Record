@@ -17,4 +17,4 @@
 1. python 설치
 2. poetry 설치 - https://python-poetry.org/docs
 3. `poetry install`
-4. `poetry run python index.py`
+4. `poetry run start`
