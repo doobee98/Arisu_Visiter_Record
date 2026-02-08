@@ -1,6 +1,8 @@
 ::  Build.bat - 전체 빌드 생성
 
-del /q "dist\ArisuRecord_64bit.zip"
+if exist dist rmdir /s /q dist
+mkdir dist
+
 call Install\Bat\DataDirectoryBuild.bat   rem ArisuRecordData.zip
 call Install\Bat\ProgramBuild.bat    rem ArisuRecord.zip
 call Install\Bat\InstallBuild.bat    rem setup.exe
