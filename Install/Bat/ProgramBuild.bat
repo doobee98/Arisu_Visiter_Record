@@ -1,4 +1,4 @@
-pyinstaller --clean --noconsole --icon=Install\BuildSource\ArisuIcon.ico ArisuRecord.py
+pyinstaller --clean --noconsole --icon=Install\BuildSource\ArisuIcon.ico --name ArisuRecord index.py
 pyinstaller ConvertExcel.py
 
 cd dist
