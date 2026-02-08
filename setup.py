@@ -1,14 +1,15 @@
 import sys
 from win32comext.shell.shell import ShellExecuteEx, IsUserAnAdmin
+from win32con import SW_SHOWNORMAL
 from Setup.View.SetupMainView import *
 
 def uac_require():
     asadmin = 'asadmin'
     try:
-        if sys.argv[-1] != asadmin:
+        if not IsUserAnAdmin():
             script = os.path.abspath(sys.argv[0])
             params = ' '.join([script] + sys.argv[1:] + [asadmin])
-            ShellExecuteEx(lpVerb='runas', lpFile = sys.executable, lpParameters=params)
+            ShellExecuteEx(lpVerb='runas', lpFile = sys.executable, lpParameters=params, nShow=SW_SHOWNORMAL)
             sys.exit()
         return True
     except Exception as e:
