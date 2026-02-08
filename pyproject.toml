@@ -10,7 +10,8 @@ requires-python = ">=3.10,<3.15"
 dependencies = [
     "pyqt5-qt5 (==5.15.2)",
     "pyqt5 (==5.15.10)",
-    "cryptography (>=46.0.3,<47.0.0)"
+    "cryptography (>=46.0.3,<47.0.0)",
+    "pywin32 (>=311,<312)"
 ]
 
 [project.scripts]
