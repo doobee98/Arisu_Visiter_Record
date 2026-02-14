@@ -6,14 +6,27 @@ authors = [
     {name = "2doo",email = "2doo@kakao.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.15"
 dependencies = [
     "pyqt5-qt5 (==5.15.2)",
     "pyqt5 (==5.15.10)",
-    "cryptography (>=46.0.3,<47.0.0)"
+    "cryptography (>=46.0.3,<47.0.0)",
+    "pywin32 (>=311,<312)",
+    "openpyxl (>=3.1.5,<4.0.0)"
 ]
 
+[project.scripts]
+start = "scripts:start"
+build = "scripts:build"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pyinstaller (>=6.18.0,<7.0.0)"
+]
+
+[tool.poetry]
+package-mode = false
