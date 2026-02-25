@@ -100,8 +100,8 @@ class TableFieldConfigModel(AbstractConfigModel):
             },
             TableFieldOption.Necessary.CAR_NUMBER: {
                 G: G.Share,
-                D: D.Active | D.ShareOn | D.WidthUp,
-                R: R.Active | R.Group | R.ShareOn | R.WidthUp | R.Completer
+                D: D.Active | D.ShareOn,
+                R: R.Active | R.Group | R.ShareOn | R.Completer
             },
             TableFieldOption.Necessary.COMPANY: {
                 G: G.Share,
@@ -131,8 +131,8 @@ class TableFieldConfigModel(AbstractConfigModel):
             '비고': {
                 # Record에서 Database 방향으로만 비고 내용이 이동함
                 G: G.Removable | G.NameChangeable | G.Share,
-                D: D.Active | D.WidthUp,
-                R: R.Active | R.ShareOn | R.WidthUp
+                D: D.Active | D.WidthUp ,
+                R: R.Active | R.ShareOn
             },
             TableFieldOption.Necessary.IN_TIME: {
                 G: G.IsTime,
