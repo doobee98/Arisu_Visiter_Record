@@ -68,6 +68,7 @@ class TableFieldOption:
         CAR_NUMBER = '차량번호'
         COMPANY = '소속'
         PURPOSE = '방문목적'
+        PHONE = '연락처'
         IN_TIME = '들어오다\n시간'
         IN_WORKER = '들어오다\n근무자'
         OUT_TIME = '\0나가다\0\n시간'

@@ -123,6 +123,11 @@ class TableFieldConfigModel(AbstractConfigModel):
                 D: D.null,
                 R: R.Active
             },
+            TableFieldOption.Necessary.PHONE: {
+                G: G.Share | G.Key,
+                D: D.Active | D.ShareOn | D.WidthUp,
+                R: R.Active | R.ShareOn | R.WidthUp
+            },
             '비고': {
                 # Record에서 Database 방향으로만 비고 내용이 이동함
                 G: G.Removable | G.NameChangeable | G.Share,
