@@ -131,7 +131,7 @@ class TableFieldConfigModel(AbstractConfigModel):
             '비고': {
                 # Record에서 Database 방향으로만 비고 내용이 이동함
                 G: G.Removable | G.NameChangeable | G.Share,
-                D: D.Active | D.WidthUp ,
+                D: D.Active | D.WidthUp,
                 R: R.Active | R.ShareOn
             },
             TableFieldOption.Necessary.IN_TIME: {
