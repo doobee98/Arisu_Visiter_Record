@@ -124,7 +124,7 @@ class TableFieldConfigModel(AbstractConfigModel):
                 R: R.Active
             },
             TableFieldOption.Necessary.PHONE: {
-                G: G.Share | G.Key,
+                G: G.Share,
                 D: D.Active | D.ShareOn | D.WidthUp,
                 R: R.Active | R.ShareOn | R.WidthUp
             },
