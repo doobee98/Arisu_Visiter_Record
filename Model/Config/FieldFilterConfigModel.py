@@ -69,6 +69,7 @@ class FieldFilterConfigModel(AbstractConfigModel):
             TableFieldOption.Necessary.PURPOSE: [F.TrimOutSpace],
             '반출입\n물품명': [F.TrimOutSpace],
             '반입/반출량': [F.TrimOutSpace],
+            TableFieldOption.Necessary.PHONE: [F.TrimOutSpace],
             '비고': [F.TrimOutSpace],
             TableFieldOption.Necessary.IN_TIME: [F.TrimAllSpace],
             TableFieldOption.Necessary.IN_WORKER: [F.TrimAllSpace, F.UpperEnglish],
